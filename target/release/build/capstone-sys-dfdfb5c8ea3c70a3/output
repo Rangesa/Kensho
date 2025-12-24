@@ -1,0 +1,349 @@
+OUT_DIR = Some(C:\Programming\MCP\target\release\build\capstone-sys-dfdfb5c8ea3c70a3\out)
+OPT_LEVEL = Some(3)
+TARGET = Some(x86_64-pc-windows-msvc)
+CARGO_ENCODED_RUSTFLAGS = Some()
+cargo:rerun-if-env-changed=VCINSTALLDIR
+VCINSTALLDIR = None
+cargo:rerun-if-env-changed=VSTEL_MSBuildProjectFullPath
+VSTEL_MSBuildProjectFullPath = None
+cargo:rerun-if-env-changed=VCToolsVersion
+VCToolsVersion = None
+cargo:rerun-if-env-changed=VSCMD_ARG_VCVARS_SPECTRE
+VSCMD_ARG_VCVARS_SPECTRE = None
+cargo:rerun-if-env-changed=WindowsSdkDir
+WindowsSdkDir = None
+cargo:rerun-if-env-changed=WindowsSDKVersion
+WindowsSDKVersion = None
+cargo:rerun-if-env-changed=LIB
+LIB = None
+PATH = Some(C:\Programming\MCP\target\release\deps;C:\Programming\MCP\target\release;C:\Users\asdas\.rustup\toolchains\stable-x86_64-pc-windows-msvc\lib\rustlib\x86_64-pc-windows-msvc\lib;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0\bin\x64;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0\bin;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files\Eclipse Adoptium\jdk-21.0.8.9-hotspot\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\ProgramData\chocolatey\bin;C:\Program Files\Git\cmd;C:\Users\asdas\.local\bin;C:\Users\asdas\AppData\Local\Programs\Python\Python314\Scripts;C:\Users\asdas\AppData\Local\Programs\Python\Python314;C:\Users\asdas\.cargo\bin;C:\Users\asdas\AppData\Local\Microsoft\WindowsApps;C:\Users\asdas\AppData\Roaming\npm;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2025.1.3\bin;C:\Users\asdas\.lmstudio\bin;C:\Users\asdas\AppData\Local\Programs\Microsoft VS Code\bin;C:\Program Files (x86)\Go\bin;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Programming\mingw64\bin;C:\Programming;C:\Program Files\LLVM\bin;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\Program Files\CMake\bin;C:\Program Files\dotnet\;C:\Program Files (x86)\Windows Kits\10\Windows Performance Toolkit\;C:\Program Files (x86)\Incredibuild;C:\Program Files\NVIDIA Corporation\Nsight Compute 2025.3.1\;C:\Program Files\Microsoft SQL Server\150\Tools\Binn\;C:\Program Files\Microsoft SQL Server\Client SDK\ODBC\170\Tools\Binn\;C:\Program Files\Docker\Docker\resources\bin;C:\Program Files\GitHub CLI\;C:\Program Files\Microsoft SQL Server\170\Tools\Binn\;C:\Program Files\nodejs\;C:\Users\asdas\AppData\Local\Programs\Python\Python314\Scripts\;C:\Users\asdas\AppData\Local\Programs\Python\Python314\;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0\bin\x64;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v13.0\bin;C:\Program Files\Common Files\Oracle\Java\javapath;C:\Program Files\Eclipse Adoptium\jdk-21.0.8.9-hotspot\bin;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\WINDOWS\System32\OpenSSH\;C:\Program Files\nodejs\;C:\ProgramData\chocolatey\bin;C:\Program Files\Git\cmd;C:\Users\asdas\.local\bin;C:\Users\asdas\AppData\Local\Programs\Python\Python313\Scripts\;C:\Users\asdas\AppData\Local\Programs\Python\Python313\;C:\Users\asdas\.cargo\bin;C:\Users\asdas\AppData\Local\Microsoft\WindowsApps;C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2025.1.3\bin;C:\Users\asdas\.lmstudio\bin;C:\Users\asdas\AppData\Local\Programs\Microsoft VS Code\bin;C:\Program Files (x86)\Go\bin;C:\Program Files\NVIDIA Corporation\NVIDIA App\NvDLISR;C:\Programming\mingw64\bin;C:\Programming;C:\Program Files\LLVM\bin;C:\Users\asdas\AppData\Local\Programs\Python\Python314;C:\Users\asdas\AppData\Local\Programs\Python\Python314\Scripts;C:\Users\asdas\AppData\Local\Programs\Antigravity\bin;C:\Users\asdas\.dotnet\tools;C:\Users\asdas\AppData\Roaming\npm;C:\Users\asdas\.rustup\toolchains\stable-x86_64-pc-windows-msvc\bin)
+cargo:rerun-if-env-changed=INCLUDE
+INCLUDE = None
+HOST = Some(x86_64-pc-windows-msvc)
+cargo:rerun-if-env-changed=CC_x86_64-pc-windows-msvc
+CC_x86_64-pc-windows-msvc = None
+cargo:rerun-if-env-changed=CC_x86_64_pc_windows_msvc
+CC_x86_64_pc_windows_msvc = None
+cargo:rerun-if-env-changed=HOST_CC
+HOST_CC = None
+cargo:rerun-if-env-changed=CC
+CC = None
+cargo:rerun-if-env-changed=CRATE_CC_NO_DEFAULTS
+CRATE_CC_NO_DEFAULTS = None
+DEBUG = Some(false)
+cargo:rerun-if-env-changed=CFLAGS
+CFLAGS = None
+cargo:rerun-if-env-changed=HOST_CFLAGS
+HOST_CFLAGS = None
+cargo:rerun-if-env-changed=CFLAGS_x86_64_pc_windows_msvc
+CFLAGS_x86_64_pc_windows_msvc = None
+cargo:rerun-if-env-changed=CFLAGS_x86_64-pc-windows-msvc
+CFLAGS_x86_64-pc-windows-msvc = None
+OUT_DIR = Some(C:\Programming\MCP\target\release\build\capstone-sys-dfdfb5c8ea3c70a3\out)
+cargo:rerun-if-env-changed=CC_ENABLE_DEBUG_OUTPUT
+cargo:rerun-if-env-changed=CRATE_CC_NO_DEFAULTS
+CRATE_CC_NO_DEFAULTS = None
+TARGET = Some(x86_64-pc-windows-msvc)
+CARGO_CFG_TARGET_FEATURE = Some(cmpxchg16b,fxsr,sse,sse2,sse3)
+HOST = Some(x86_64-pc-windows-msvc)
+cargo:rerun-if-env-changed=CFLAGS
+CFLAGS = None
+cargo:rerun-if-env-changed=HOST_CFLAGS
+HOST_CFLAGS = None
+cargo:rerun-if-env-changed=CFLAGS_x86_64_pc_windows_msvc
+CFLAGS_x86_64_pc_windows_msvc = None
+cargo:rerun-if-env-changed=CFLAGS_x86_64-pc-windows-msvc
+CFLAGS_x86_64-pc-windows-msvc = None
+cargo:rerun-if-env-changed=CC_ENABLE_DEBUG_OUTPUT
+MCInst.c
+MCInstrDesc.c
+MCRegisterInfo.c
+SStream.c
+AArch64BaseInfo.c
+AArch64Disassembler.c
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(207): warning C4456: 'Mask' を宣言すると、以前のローカル宣言が隠蔽されます
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(197): note: 'Mask' の宣言を確認してください
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(222): warning C4244: '関数': 'uint64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(224): warning C4244: '関数': 'uint64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(232): warning C4244: '関数': 'uint64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(234): warning C4244: '関数': 'uint64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(419): warning C4244: 'return': 'uint64_t' から 'uint8_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(517): warning C4244: 'return': 'uint64_t' から 'uint8_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64GenDisassemblerTables.inc(22560): warning C4244: '=': 'uint64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64GenDisassemblerTables.inc(22560): warning C4244: '=': 'uint64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64Disassembler.c(1851): warning C4244: '関数': 'uint32_t' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64Disassembler.c(1938): warning C4334: '<<': 32 ビット シフトの結果が暗黙的に 64 ビットに変換されました (64 ビット シフトに意図的に変換しようとしましたか?)
+AArch64InstPrinter.c
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(207): warning C4456: 'Mask' を宣言すると、以前のローカル宣言が隠蔽されます
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(197): note: 'Mask' の宣言を確認してください
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(222): warning C4244: '関数': 'uint64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(224): warning C4244: '関数': 'uint64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(232): warning C4244: '関数': 'uint64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(234): warning C4244: '関数': 'uint64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(419): warning C4244: 'return': 'uint64_t' から 'uint8_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64AddressingModes.h(517): warning C4244: 'return': 'uint64_t' から 'uint8_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(367): warning C4456: 'LSB' を宣言すると、以前のローカル宣言が隠蔽されます
+capstone/arch/AArch64/AArch64InstPrinter.c(105): note: 'LSB' の宣言を確認してください
+capstone/arch/AArch64/AArch64InstPrinter.c(368): warning C4456: 'Width' を宣言すると、以前のローカル宣言が隠蔽されます
+capstone/arch/AArch64/AArch64InstPrinter.c(105): note: 'Width' の宣言を確認してください
+capstone/arch/AArch64/AArch64InstPrinter.c(523): warning C4244: '初期化中': 'int64_t' から 'int' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(557): warning C4244: '初期化中': 'int64_t' から 'int' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(896): warning C4244: '=': 'unsigned int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(915): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+capstone/arch/AArch64/AArch64InstPrinter.c(928): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+capstone/arch/AArch64/AArch64InstPrinter.c(941): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+capstone/arch/AArch64/AArch64InstPrinter.c(954): warning C4996: 'strncpy': This function or variable may be unsafe. Consider using strncpy_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
+capstone/arch/AArch64/AArch64InstPrinter.c(1606): warning C4244: '関数': 'unsigned int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(1612): warning C4244: '関数': 'unsigned int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(1641): warning C4244: '関数': 'unsigned int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(1639): warning C4244: '初期化中': 'int64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(1651): warning C4244: '初期化中': 'double' から 'float' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(1963): warning C4244: '関数': 'unsigned int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(1966): warning C4244: '関数': 'unsigned int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(1969): warning C4244: '関数': 'unsigned int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2009): warning C4244: '関数': 'unsigned int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2074): warning C4244: '関数': 'unsigned int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2140): warning C4244: '関数': 'unsigned int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2200): warning C4244: '関数': 'int64_t' から 'int' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2198): warning C4244: '初期化中': 'int64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2207): warning C4244: '関数': 'unsigned int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2205): warning C4244: '初期化中': 'int64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2264): warning C4244: '初期化中': 'int64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2265): warning C4244: '初期化中': 'int64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2284): warning C4244: '初期化中': 'int64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2285): warning C4244: '初期化中': 'int64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2308): warning C4244: '関数': 'uint64_t' から 'int16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2318): warning C4244: '関数': 'uint64_t' から 'int16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2351): warning C4244: '関数': 'unsigned int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2352): warning C4244: '関数': 'unsigned int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/AArch64/AArch64InstPrinter.c(2353): warning C4244: '初期化中': 'int64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64GenAsmWriter.inc(24027): warning C4310: キャストによって定数値が切り捨てられました。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64GenAsmWriter.inc(24290): warning C4244: '関数': 'int64_t' から 'uint16_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64InstPrinter.c(1621) : warning C4702: 制御が渡らないコードです。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64InstPrinter.c(1626) : warning C4702: 制御が渡らないコードです。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\AArch64\AArch64InstPrinter.c(1627) : warning C4702: 制御が渡らないコードです。
+AArch64Mapping.c
+AArch64Module.c
+ARMDisassembler.c
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\ARM\ARMBaseInfo.h(471): warning C4244: '関数': 'unsigned int' から 'uint16_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\ARM\ARMGenDisassemblerTables.inc(15180): warning C4244: '=': 'uint64_t' から 'uint16_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\ARM\ARMGenDisassemblerTables.inc(15180): warning C4244: '=': 'uint64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\ARM\ARMGenDisassemblerTables.inc(15180): warning C4244: '=': 'uint64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\ARM\ARMGenDisassemblerTables.inc(15183): warning C4244: '関数': 'uint32_t' から 'uint16_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\ARM\ARMGenDisassemblerTables.inc(15184): warning C4244: '=': 'uint64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\ARM\ARMGenDisassemblerTables.inc(15184): warning C4244: '=': 'uint64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+capstone/arch/ARM/ARMDisassembler.c(2432): warning C4244: '関数': 'unsigned int' から 'unsigned char' への変換です。データが失われる可能性があります。
+capstone/arch/ARM/ARMDisassembler.c(2434): warning C4244: '関数': 'unsigned int' から 'unsigned char' への変換です。データが失われる可能性があります。
+capstone/arch/ARM/ARMDisassembler.c(4485): warning C4244: '関数': 'unsigned int' から 'uint8_t' への変換です。データが失われる可能性があります。
+ARMInstPrinter.c
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\ARM\ARMBaseInfo.h(471): warning C4244: '関数': 'unsigned int' から 'uint16_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\ARM\ARMGenAsmWriter.inc(9510): warning C4310: キャストによって定数値が切り捨てられました。
+capstone/arch/ARM/ARMInstPrinter.c(737): warning C4456: 'i' を宣言すると、以前のローカル宣言が隠蔽されます
+capstone/arch/ARM/ARMInstPrinter.c(450): note: 'i' の宣言を確認してください
+capstone/arch/ARM/ARMInstPrinter.c(1830): warning C4244: '関数': 'uint32_t' から 'uint8_t' への変換です。データが失われる可能性があります。
+ARMMapping.c
+capstone/arch/ARM/ARMMapping.c(292): warning C4245: 'return': 'int' から 'unsigned int' に変換しました。signed/unsigned が一致しません。
+capstone/arch/ARM/ARMMapping.c(310): warning C4245: 'return': 'int' から 'unsigned int' に変換しました。signed/unsigned が一致しません。
+ARMModule.c
+BPFDisassembler.c
+capstone/arch/BPF/BPFDisassembler.c(459): warning C4206: 非標準の拡張機能が使用されています: 翻訳単位が空です。
+BPFInstPrinter.c
+BPFMapping.c
+capstone/arch/BPF/BPFMapping.c(459): warning C4244: '=': 'int' から 'uint16_t' への変換です。データが失われる可能性があります。
+BPFModule.c
+capstone/arch/BPF/BPFModule.c(35): warning C4206: 非標準の拡張機能が使用されています: 翻訳単位が空です。
+EVMDisassembler.c
+EVMInstPrinter.c
+EVMMapping.c
+capstone/arch/EVM/EVMMapping.c(21): warning C4459: 'insns' を宣言すると、グローバル宣言が隠蔽されます
+capstone/arch/EVM/EVMMapping.c(14): note: 'insns' の宣言を確認してください
+EVMModule.c
+M680XDisassembler.c
+capstone/arch/M680X/M680XDisassembler.c(851): warning C4244: '+=': 'int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/M680X/M680XDisassembler.c(865): warning C4244: '+=': 'int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/M680X/M680XDisassembler.c(875): warning C4244: '+=': 'int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/M680X/M680XDisassembler.c(887): warning C4244: '+=': 'int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/M680X/M680XDisassembler.c(921): warning C4244: '+=': 'int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/M680X/M680XDisassembler.c(929): warning C4244: '+=': 'int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/M680X/M680XDisassembler.c(1601): warning C4245: '初期化中': 'int' から 'const uint8_t' に変換しました。signed/unsigned が一致しません。
+capstone/arch/M680X/M680XDisassembler.c(1604): warning C4245: '初期化中': 'int' から 'const uint8_t' に変換しました。signed/unsigned が一致しません。
+M680XInstPrinter.c
+M680XModule.c
+M68KDisassembler.c
+capstone/arch/M68K/M68KDisassembler.c(198): warning C4245: 'return': '__int64' から 'uint64_t' に変換しました。signed/unsigned が一致しません。
+capstone/arch/M68K/M68KDisassembler.c(225): warning C4132: 'g_instruction_table': const オブジェクトは初期化しなければなりません。
+capstone/arch/M68K/M68KDisassembler.c(746): warning C4244: '=': 'int' から 'uint8_t' への変換です。データが失われる可能性があります。
+capstone/arch/M68K/M68KDisassembler.c(880): warning C4244: 'return': 'uint32_t' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/M68K/M68KDisassembler.c(894): warning C4244: 'return': 'uint32_t' から 'uint8_t' への変換です。データが失われる可能性があります。
+capstone/arch/M68K/M68KDisassembler.c(1778): warning C4244: '=': 'int' から 'uint8_t' への変換です。データが失われる可能性があります。
+capstone/arch/M68K/M68KDisassembler.c(1941): warning C4456: 'op0' を宣言すると、以前のローカル宣言が隠蔽されます
+capstone/arch/M68K/M68KDisassembler.c(1920): note: 'op0' の宣言を確認してください
+capstone/arch/M68K/M68KDisassembler.c(1942): warning C4456: 'op1' を宣言すると、以前のローカル宣言が隠蔽されます
+capstone/arch/M68K/M68KDisassembler.c(1921): note: 'op1' の宣言を確認してください
+capstone/arch/M68K/M68KDisassembler.c(1943): warning C4456: 'ext' を宣言すると、以前のローカル宣言が隠蔽されます
+capstone/arch/M68K/M68KDisassembler.c(1919): note: 'ext' の宣言を確認してください
+M68KInstPrinter.c
+capstone/arch/M68K/M68KInstPrinter.c(279): warning C4244: '=': 'int' から 'uint8_t' への変換です。データが失われる可能性があります。
+capstone/arch/M68K/M68KInstPrinter.c(282): warning C4244: '=': 'int' から 'uint8_t' への変換です。データが失われる可能性があります。
+capstone/arch/M68K/M68KInstPrinter.c(285): warning C4244: '=': 'int' から 'uint8_t' への変換です。データが失われる可能性があります。
+M68KModule.c
+MOS65XXDisassembler.c
+capstone/include\capstone/mos65xx.h(186): warning C4201: 非標準の拡張機能が使用されています: 無名の構造体または共用体です。
+capstone/arch/MOS65XX/MOS65XXDisassembler.c(206): warning C4244: '=': 'int64_t' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/MOS65XX/MOS65XXDisassembler.c(229): warning C4244: '=': 'int64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+capstone/arch/MOS65XX/MOS65XXDisassembler.c(238): warning C4244: '=': 'int64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+capstone/arch/MOS65XX/MOS65XXDisassembler.c(215): warning C4244: '初期化中': 'int64_t' から 'int' への変換です。データが失われる可能性があります。
+capstone/arch/MOS65XX/MOS65XXDisassembler.c(270): warning C4244: '=': 'int64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+capstone/arch/MOS65XX/MOS65XXDisassembler.c(421): warning C4244: '=': 'int' から 'unsigned char' への変換です。データが失われる可能性があります。
+MOS65XXModule.c
+capstone/arch/MOS65XX/MOS65XXModule.c(80): warning C4206: 非標準の拡張機能が使用されています: 翻訳単位が空です。
+MipsDisassembler.c
+MipsInstPrinter.c
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\Mips\MipsGenAsmWriter.inc(5709): warning C4310: キャストによって定数値が切り捨てられました。
+MipsMapping.c
+MipsModule.c
+PPCDisassembler.c
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\PowerPC\PPCGenDisassemblerTables.inc(6687): warning C4244: '=': 'uint64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\PowerPC\PPCGenDisassemblerTables.inc(6687): warning C4244: '=': 'uint64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+PPCInstPrinter.c
+capstone/arch/PowerPC/PPCInstPrinter.c(387): warning C4310: キャストによって定数値が切り捨てられました。
+capstone/arch/PowerPC/PPCInstPrinter.c(1017): warning C4244: '関数': 'int64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\PowerPC\PPCGenAsmWriter.inc(11205): warning C4310: キャストによって定数値が切り捨てられました。
+PPCMapping.c
+PPCModule.c
+RISCVDisassembler.c
+capstone/arch/RISCV/RISCVDisassembler.c(297): warning C4244: '関数': 'uint64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\RISCV\RISCVGenDisassemblerTables.inc(1776): warning C4244: '初期化中': 'uint64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\RISCV\RISCVGenDisassemblerTables.inc(1776): warning C4244: '初期化中': 'uint64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+RISCVInstPrinter.c
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\RISCV\RISCVGenAsmWriter.inc(2565): warning C4267: '=': 'size_t' から 'unsigned int' に変換しました。データが失われているかもしれません。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\RISCV\RISCVGenAsmWriter.inc(2589): warning C4310: キャストによって定数値が切り捨てられました。
+capstone/arch/RISCV/RISCVInstPrinter.c(408): warning C4244: '初期化中': 'int64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+capstone/arch/RISCV/RISCVInstPrinter.c(420): warning C4244: '初期化中': 'int64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+RISCVMapping.c
+RISCVModule.c
+SparcDisassembler.c
+SparcInstPrinter.c
+capstone/arch/Sparc/SparcInstPrinter.c(221): warning C4244: '関数': 'int64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+capstone/arch/Sparc/SparcInstPrinter.c(232): warning C4244: '関数': 'int64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+capstone/arch/Sparc/SparcInstPrinter.c(261): warning C4244: '関数': 'int64_t' から 'uint32_t' への変換です。データが失われる可能性があります。
+capstone/arch/Sparc/SparcInstPrinter.c(270): warning C4244: '=': 'int64_t' から 'int32_t' への変換です。データが失われる可能性があります。
+C:\Users\asdas\.cargo\registry\src\index.crates.io-1949cf8c6b5b557f\capstone-sys-0.16.0\capstone\arch\Sparc\SparcGenAsmWriter.inc(5693): warning C4310: キャストによって定数値が切り捨てられました。
+SparcMapping.c
+SparcModule.c
+SystemZDisassembler.c
+SystemZInstPrinter.c
+capstone/arch/SystemZ/SystemZInstPrinter.c(388): warning C4244: '関数': 'uint64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+capstone/arch/SystemZ/SystemZInstPrinter.c(397): warning C4244: '関数': 'uint64_t' から 'unsigned int' への変換です。データが失われる可能性があります。
+SystemZMCTargetDesc.c
+SystemZMapping.c
+SystemZModule.c
+TMS320C64xDisassembler.c
+capstone/arch/TMS320C64x/TMS320C64xDisassembler.c(473): warning C4245: '=': 'int' から 'unsigned int' に変換しました。signed/unsigned が一致しません。
+capstone/arch/TMS320C64x/TMS320C64xDisassembler.c(505): warning C4245: '=': 'int' から 'unsigned int' に変換しました。signed/unsigned が一致しません。
+capstone/arch/TMS320C64x/TMS320C64xDisassembler.c(537): warning C4245: '=': 'int' から 'unsigned int' に変換しました。signed/unsigned が一致しません。
+capstone/arch/TMS320C64x/TMS320C64xDisassembler.c(569): warning C4245: '=': 'int' から 'unsigned int' に変換しました。signed/unsigned が一致しません。
+TMS320C64xInstPrinter.c
+capstone/arch/TMS320C64x/TMS320C64xInstPrinter.c(172): warning C4244: '=': 'int64_t' から 'int32_t' への変換です。データが失われる可能性があります。
+TMS320C64xMapping.c
+TMS320C64xModule.c
+WASMDisassembler.c
+capstone/arch/WASM/WASMDisassembler.c(282): warning C4245: '=': 'int' から 'size_t' に変換しました。signed/unsigned が一致しません。
+capstone/arch/WASM/WASMDisassembler.c(288): warning C4245: '=': 'int' から 'size_t' に変換しました。signed/unsigned が一致しません。
+capstone/arch/WASM/WASMDisassembler.c(315): warning C4245: '=': 'int' から 'size_t' に変換しました。signed/unsigned が一致しません。
+capstone/arch/WASM/WASMDisassembler.c(320): warning C4245: '=': 'int' から 'size_t' に変換しました。signed/unsigned が一致しません。
+capstone/arch/WASM/WASMDisassembler.c(360): warning C4245: '=': 'int' から 'size_t' に変換しました。signed/unsigned が一致しません。
+capstone/arch/WASM/WASMDisassembler.c(393): warning C4267: '=': 'size_t' から 'uint32_t' に変換しました。データが失われているかもしれません。
+capstone/arch/WASM/WASMDisassembler.c(397): warning C4267: '=': 'size_t' から 'uint32_t' に変換しました。データが失われているかもしれません。
+capstone/arch/WASM/WASMDisassembler.c(400): warning C4267: '=': 'size_t' から 'uint16_t' に変換しました。データが失われているかもしれません。
+capstone/arch/WASM/WASMDisassembler.c(423): warning C4267: '=': 'size_t' から 'uint32_t' に変換しました。データが失われているかもしれません。
+capstone/arch/WASM/WASMDisassembler.c(427): warning C4267: '=': 'size_t' から 'uint32_t' に変換しました。データが失われているかもしれません。
+capstone/arch/WASM/WASMDisassembler.c(430): warning C4267: '=': 'size_t' から 'uint16_t' に変換しました。データが失われているかもしれません。
+capstone/arch/WASM/WASMDisassembler.c(456): warning C4267: '=': 'size_t' から 'uint32_t' に変換しました。データが失われているかもしれません。
+capstone/arch/WASM/WASMDisassembler.c(468): warning C4267: '=': 'size_t' から 'uint32_t' に変換しました。データが失われているかもしれません。
+capstone/arch/WASM/WASMDisassembler.c(473): warning C4267: '=': 'size_t' から 'uint32_t' に変換しました。データが失われているかもしれません。
+capstone/arch/WASM/WASMDisassembler.c(477): warning C4267: '=': 'size_t' から 'uint16_t' に変換しました。データが失われているかもしれません。
+capstone/arch/WASM/WASMDisassembler.c(553): warning C4267: '+=': 'size_t' から 'int' に変換しました。データが失われているかもしれません。
+capstone/arch/WASM/WASMDisassembler.c(574): warning C4018: '<': signed と unsigned の数値を比較しようとしました。
+capstone/arch/WASM/WASMDisassembler.c(584): warning C4267: '+=': 'size_t' から 'int' に変換しました。データが失われているかもしれません。
+capstone/arch/WASM/WASMDisassembler.c(595): warning C4267: '=': 'size_t' から 'uint16_t' に変換しました。データが失われているかもしれません。
+capstone/arch/WASM/WASMDisassembler.c(627): warning C4267: '=': 'size_t' から 'uint16_t' に変換しました。データが失われているかもしれません。
+WASMInstPrinter.c
+WASMMapping.c
+WASMModule.c
+X86ATTInstPrinter.c
+capstone/arch/X86/X86ATTInstPrinter.c(338): warning C4244: '関数': 'int' から 'unsigned short' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86ATTInstPrinter.c(461): warning C4244: '関数': 'int' から 'unsigned short' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86ATTInstPrinter.c(564): warning C4244: '関数': 'unsigned int' から 'unsigned short' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86ATTInstPrinter.c(569): warning C4244: '関数': 'unsigned int' から 'unsigned short' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86ATTInstPrinter.c(570): warning C4244: '関数': 'unsigned int' から 'unsigned short' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86ATTInstPrinter.c(720): warning C4244: '関数': 'unsigned int' から 'unsigned short' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86ATTInstPrinter.c(722): warning C4244: '関数': 'unsigned int' から 'unsigned short' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86ATTInstPrinter.c(738): warning C4244: '関数': 'int' から 'unsigned short' への変換です。データが失われる可能性があります。
+X86Disassembler.c
+X86DisassemblerDecoder.c
+capstone/arch/X86/X86DisassemblerDecoder.c(1401): warning C4244: '=': 'uint64_t' から 'uint8_t' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86DisassemblerDecoder.c(1676): warning C4244: 'return': 'int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86DisassemblerDecoder.c(1677): warning C4244: 'return': 'int' から 'uint16_t' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86DisassemblerDecoder.c(1708): warning C4244: '関数': 'int' から 'uint8_t' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86DisassemblerDecoder.c(1717): warning C4244: '関数': 'int' から 'uint8_t' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86DisassemblerDecoder.c(1802): warning C4244: '=': 'uint64_t' から 'uint8_t' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86DisassemblerDecoder.c(1951): warning C4334: '<<': 32 ビット シフトの結果が暗黙的に 64 ビットに変換されました (64 ビット シフトに意図的に変換しようとしましたか?)
+capstone/arch/X86/X86DisassemblerDecoder.c(1964): warning C4334: '<<': 32 ビット シフトの結果が暗黙的に 64 ビットに変換されました (64 ビット シフトに意図的に変換しようとしましたか?)
+X86InstPrinterCommon.c
+X86IntelInstPrinter.c
+capstone/arch/X86/X86IntelInstPrinter.c(483): warning C4244: '関数': 'int' から 'unsigned short' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86IntelInstPrinter.c(618): warning C4244: '関数': 'int' から 'unsigned short' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86IntelInstPrinter.c(810): warning C4244: '関数': 'unsigned int' から 'unsigned short' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86IntelInstPrinter.c(817): warning C4244: '関数': 'unsigned int' から 'unsigned short' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86IntelInstPrinter.c(818): warning C4244: '関数': 'unsigned int' から 'unsigned short' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86IntelInstPrinter.c(830): warning C4244: '関数': 'unsigned int' から 'unsigned short' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86IntelInstPrinter.c(946): warning C4244: '関数': 'unsigned int' から 'unsigned short' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86IntelInstPrinter.c(948): warning C4244: '関数': 'unsigned int' から 'unsigned short' への変換です。データが失われる可能性があります。
+capstone/arch/X86/X86IntelInstPrinter.c(964): warning C4244: '関数': 'int' から 'unsigned short' への変換です。データが失われる可能性があります。
+X86Mapping.c
+capstone/arch/X86/X86Mapping.c(27): warning C4245: '初期化中': '__int64' から 'const uint64_t' に変換しました。signed/unsigned が一致しません。
+capstone/arch/X86/X86Mapping.c(991): warning C4245: 'return': 'int' から 'unsigned int' に変換しました。signed/unsigned が一致しません。
+capstone/arch/X86/X86Mapping.c(1009): warning C4245: 'return': 'int' から 'unsigned int' に変換しました。signed/unsigned が一致しません。
+capstone/arch/X86/X86Mapping.c(1460): warning C4459: 'insns' を宣言すると、グローバル宣言が隠蔽されます
+capstone/arch/X86/X86Mapping.c(959): note: 'insns' の宣言を確認してください
+capstone/arch/X86/X86Mapping.c(1489): warning C4459: 'insns' を宣言すると、グローバル宣言が隠蔽されます
+capstone/arch/X86/X86Mapping.c(959): note: 'insns' の宣言を確認してください
+X86Module.c
+XCoreDisassembler.c
+XCoreInstPrinter.c
+XCoreMapping.c
+XCoreModule.c
+cs.c
+capstone/cs.c(292): warning C4232: 非標準の拡張機能が使用されています: 'cs_mem_malloc': dllimport 'malloc' のアドレスは静的ではありません。一貫性が保証されません。
+C:\Program Files (x86)\Windows Kits\10\include\10.0.26100.0\ucrt\corecrt_malloc.h(101): note: 'malloc' の宣言を確認してください
+capstone/cs.c(293): warning C4232: 非標準の拡張機能が使用されています: 'cs_mem_calloc': dllimport 'calloc' のアドレスは静的ではありません。一貫性が保証されません。
+C:\Program Files (x86)\Windows Kits\10\include\10.0.26100.0\ucrt\corecrt_malloc.h(66): note: 'calloc' の宣言を確認してください
+capstone/cs.c(294): warning C4232: 非標準の拡張機能が使用されています: 'cs_mem_realloc': dllimport 'realloc' のアドレスは静的ではありません。一貫性が保証されません。
+C:\Program Files (x86)\Windows Kits\10\include\10.0.26100.0\ucrt\corecrt_malloc.h(126): note: 'realloc' の宣言を確認してください
+capstone/cs.c(295): warning C4232: 非標準の拡張機能が使用されています: 'cs_mem_free': dllimport 'free' のアドレスは静的ではありません。一貫性が保証されません。
+C:\Program Files (x86)\Windows Kits\10\include\10.0.26100.0\ucrt\corecrt_malloc.h(89): note: 'free' の宣言を確認してください
+utils.c
+capstone/utils.c(151): warning C4245: 'return': 'int' から 'unsigned int' に変換しました。signed/unsigned が一致しません。
+capstone/utils.c(158): warning C4267: 'return': 'size_t' から 'unsigned int' に変換しました。データが失われているかもしれません。
+capstone/utils.c(168): warning C4245: 'return': 'int' から 'unsigned int' に変換しました。signed/unsigned が一致しません。
+cargo:rerun-if-env-changed=AR_x86_64-pc-windows-msvc
+AR_x86_64-pc-windows-msvc = None
+cargo:rerun-if-env-changed=AR_x86_64_pc_windows_msvc
+AR_x86_64_pc_windows_msvc = None
+cargo:rerun-if-env-changed=HOST_AR
+HOST_AR = None
+cargo:rerun-if-env-changed=AR
+AR = None
+cargo:rerun-if-env-changed=ARFLAGS
+ARFLAGS = None
+cargo:rerun-if-env-changed=HOST_ARFLAGS
+HOST_ARFLAGS = None
+cargo:rerun-if-env-changed=ARFLAGS_x86_64_pc_windows_msvc
+ARFLAGS_x86_64_pc_windows_msvc = None
+cargo:rerun-if-env-changed=ARFLAGS_x86_64-pc-windows-msvc
+ARFLAGS_x86_64-pc-windows-msvc = None
+cargo:rustc-link-search=native=C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.50.35717\atlmfc\lib\x64
+cargo:rustc-link-lib=static=capstone
+cargo:rustc-link-search=native=C:\Programming\MCP\target\release\build\capstone-sys-dfdfb5c8ea3c70a3\out
+cargo:rustc-link-lib=static=capstone

@@ -1,0 +1,75 @@
+[package]
+name = "ghidra-mcp-native"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# MCP通信
+tokio = { version = "1.35", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+async-trait = "0.1"
+
+# バイナリ解析
+goblin = "0.8"           # ELF/PE/Mach-Oパーサー（超高速）
+capstone = "0.12"        # 逆アセンブラ（多アーキテクチャ対応）
+object = "0.32"          # バイナリオブジェクト操作
+
+# 制御フロー・データフロー解析用
+petgraph = "0.6"         # グラフアルゴリズム
+indexmap = "2.0"         # 順序付きマップ
+
+# エラーハンドリング
+anyhow = "1.0"
+thiserror = "1.0"
+
+# ハッシュ計算
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+
+# 並列処理（オプション）
+rayon = { version = "1.8", optional = true }
+
+# ログ
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# CLI（デバッグ用）
+clap = { version = "4.4", features = ["derive"] }
+
+# Windows API（動的解析用）
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_System_Diagnostics_Debug",
+    "Win32_System_Memory",
+    "Win32_System_Threading",
+    "Win32_System_ProcessStatus",
+    "Win32_System_Diagnostics_ToolHelp"
+] }
+
+[dev-dependencies]
+criterion = "0.5"
+
+[features]
+default = []
+parallel = ["rayon"]
+
+[lib]
+name = "ghidra_mcp"
+path = "src/lib.rs"
+
+[[bin]]
+name = "ghidra-mcp"
+path = "src/main.rs"
+
+[[bin]]
+name = "memscan"
+path = "src/bin/memscan.rs"
+
+[[example]]
+name = "decompile_demo"
+path = "examples/decompile_demo.rs"
+
+[[example]]
+name = "pe_analyzer"
+path = "examples/pe_analyzer.rs"

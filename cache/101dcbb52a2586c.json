@@ -1,0 +1,14 @@
+{
+  "file_hash": "101dcbb52a2586c",
+  "results": {
+    "5368713232": {
+      "address": 5368713232,
+      "pcode_count": 4434,
+      "block_count": 245,
+      "type_count": 870,
+      "loop_count": 0,
+      "control_structure": "block_0;\n",
+      "cached_at": 1765853623
+    }
+  }
+}
