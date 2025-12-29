@@ -1,137 +1,61 @@
-# Kensho MCP 🦀
+# Kensho (kensho-mcp)
 
-**AI駆動の次世代難読化解除・脆弱性検出フレームワーク**
+RustネイティブのP-codeベース・バイナリ解析フレームワーク。
+GhidraのP-codeアーキテクチャを参考に、難読化解除（MBA簡約化）とシンボリック実行に特化した解析エンジンを提供します。
 
-Kensho MCP (Model Context Protocol) は、Rustでゼロから設計された高度なバイナリ解析エンジンです。
-GhidraのP-codeアーキテクチャをベースにしつつ、**難読化解除（De-obfuscation）**と**自動脆弱性検出**に特化して進化しました。
+## 🛠 技術仕様
 
-単なるデコンパイラではなく、AIエージェント（Claude Code等）がバイナリの動作原理を深く理解し、推論するための「脳」として機能します。
+### 1. P-code エンジン
+- **Lifter**: `iced-x86` を使用したx86-64命令からP-codeへの変換。
+- **SSA Transform**: Dominance Frontierに基づくPhi関数挿入を含むSSA形式への変換。
+- **Optimization**: NZMask解析、定数畳み込み、デッドコード削除、Copy Propagation等の最適化パス。
 
-## 🚀 Key Features
+### 2. Kensho SMT Solver (Internal)
+- **Native Implementation**: Z3等の外部依存を排除した、RustネイティブのBit-blasting SMTソルバー。
+- **MBA Simplification**: 複雑なビット演算（Mixed Boolean-Arithmetic）をSATベースの等価性検証により簡約化。
+- **Verification**: 最適化前後のP-codeが論理的に等価であることを証明。
 
-### 🛡️ Advanced De-obfuscation (難読化解除)
-現代のマルウェアや商用保護ツールが用いる高度な難読化技術に対抗します。
-- **MBA (Mixed Boolean-Arithmetic) Solver**: `(x ^ y) + 2*(x & y)` のような複雑なビット演算式を、代数的簡約ルールとSMTソルバーを用いて元のシンプルな式 (`x + y`) に復元します。
-- **Control Flow Unflattening**: 制御フロー平坦化によって破壊されたグラフ構造を解析し、元のループや条件分岐を復元します。
-- **VM Detection**: 仮想マシン（VM）化されたコードのエントリポイント、ディスパッチャ、ハンドラテーブルを自動的に検知・解析します。
+### 3. 解析機能
+- **Data Flow**: Def-Use Chainの構築と到達可能性解析。
+- **Control Flow**: 制御フロー平坦化の解除、ループ・条件分岐の構造復元。
+- **Indirect Jumps**: ジャンプテーブル解析によるSwitch-Case構造の復元。
+- **Symbolic Execution**: シンボリックメモリモデルによるパス探索と脆弱性検知。
 
-### 🧠 Kensho SMT Solver
-外部ライブラリ（Z3等）に依存しない、Rustネイティブの自社製SMTソルバーを搭載。
-- **Zero Dependency**: Z3の巨大な依存を排除し、ビルド時間とバイナリサイズを60%以上削減。
-- **Native Bit-blasting**: 難読化解除前後のコードが論理的に等価であることを証明し、誤った最適化を防ぎます。
-- **Optimization**: バイナリ解析に特化したヒューリスティクスにより、高速な検証を実現。
+## 📦 プロジェクト構造
 
-### ⚡ High Performance & Safety
-- **Rust Native**: メモリ安全性を保証しつつ、C++に匹敵するパフォーマンスを実現。
-- **Parallel Analysis**: 関数単位の並列解析と、xxHash3ベースの強力なキャッシングシステム（最大1000倍高速化）。
-- **Ghidra非依存**: JVM不要、単一バイナリで動作（数MB程度）。
+- `src/kensho_smt/`: 自作SATソルバー、ビットブラスティング、式簡約化。
+- `src/decompiler_prototype/`: P-code生成、SSA変換、最適化エンジン。
+- `src/hierarchical_analyzer.rs`: 大規模バイナリ向けのページネーション付き解析。
+- `examples/`: War Thunder（PE64）等の実バイナリを用いた解析デモ。
 
-## 📦 Architecture
+## 🚀 利用方法
 
-```mermaid
-graph TD
-    Binary[Binary File] --> Parser[Goblin Parser]
-    Parser --> Disasm[Capstone Disassembler]
-    Disasm --> Pcode[P-code Lifter]
-    
-    subgraph Core Analysis
-        Pcode --> SSA[SSA Transform]
-        SSA --> Opt[Optimization & Type Inference]
-    end
-    
-    subgraph De-obfuscation Engine
-        Opt --> MBA[MBA Solver]
-        Opt --> Unflat[CFG Unflattening]
-        Opt --> VM[VM Detection]
-    end
-    
-    subgraph Verification & Security
-        MBA --> KenshoSMT[Kensho SMT Solver]
-        Unflat --> KenshoSMT
-        Opt --> SymExec[Symbolic Execution]
-        SymExec --> Vuln[Vulnerability Detector]
-    end
-    
-    Vuln --> Output[JSON / MCP Response]
-    KenshoSMT --> Output
-```
-
-## 🚀 Quick Start
-
-### 1. ビルド
-
+### ビルド
 ```bash
-# リリースビルド（推奨）
 cargo build --release
 ```
 
-### 2. MCPサーバーとして起動
+### MCP (Model Context Protocol) 連携
+このサーバーはMCPプロトコルを介して、静的解析結果を構造化データ（JSON）として提供します。
 
-```bash
-./target/release/kensho-mcp
-# stdin/stdoutでMCPプロトコル通信開始
-```
-
-### 3. Claude Codeへの統合
-
-`~/.config/claude-code/mcp.json`:
-
+`mcp.json` 設定例:
 ```json
 {
   "mcpServers": {
-    "kensho-mcp": {
-      "command": "/absolute/path/to/kensho-mcp/target/release/kensho-mcp.exe",
-      "args": []
+    "kensho": {
+      "command": "target/release/kensho-mcp.exe"
     }
   }
 }
 ```
 
-## 🛠️ MCP Tools Reference
+## 🔬 実装ステータス (Phases)
 
-AIエージェントから利用可能な主要ツール一覧です。
+- [x] Phase 1-6: 基本P-code生成、SSA変換、型推論、制御構造認識。
+- [x] Phase 7-9: NZMask最適化、シンボル復元、C疑似コード生成。
+- [x] Phase 10: Def-Use Chain、ジャンプテーブル解析、Switch文復元。
+- [x] SMT Migration: 外部Z3依存の完全削除と自作ソルバーへの移行。
 
-### 基本解析（階層1）
-- **`get_binary_summary`**: バイナリの概要（サイズ、形式、アーキテクチャ）を取得。最初に実行すべきコマンド。
-- **`list_sections`**: セクション一覧を取得。
-- **`list_functions`**: 関数一覧を取得（フィルタリング・ページネーション対応）。
-- **`list_strings`**: 文字列一覧を取得。
-
-### 詳細解析（階層2）
-- **`list_imports`**: インポート関数一覧を取得。
-- **`detect_export_functions`**: エクスポート関数を検出。
-
-### デコンパイル（階層3）
-- **`decompile_function_native`**: 指定したアドレスの関数をデコンパイルし、Cライクな疑似コードとP-code統計を返す。
-- **`decompile_function_cached`**: キャッシュ機能付きの高速デコンパイル。2回目以降は即座に応答。
-
-## 🎯 Ghidra vs Kensho MCP Native
-
-| 項目 | Ghidra Headless | Kensho MCP |
-|------|----------------|-------------------|
-| 起動時間 | 5-10秒 | <100ms |
-| メモリ使用 | 500MB-2GB | 10-50MB |
-| 依存関係 | JVM必須 | なし（単一バイナリ） |
-| SMTソルバ | 外部連携が必要 | 内蔵 (Kensho SMT) |
-| キャッシュ | なし | xxHash3 (最大1000倍) |
-
-## 📂 Project Structure
-
-*   **`src/lib.rs`**: ライブラリエントリポイント、モジュール定義。
-*   **`src/main.rs`**: MCPサーバー実装。
-*   **`src/decompiler_prototype/`**: デコンパイラの中核。
-    *   `mba/`: 難読化解除ロジック。
-    *   `optimizer.rs`: 最適化ルールエンジン。
-    *   `symbolic_execution/`: シンボリック実行エンジン。
-*   **`src/kensho_smt/`**: 自社製SMTソルバーの実装。
-*   **`examples/`**: 各機能のデモコード。
-    *   `warthunder_kensho_demo.rs`: 実バイナリ解析デモ。
-    *   `symbolic_execution_demo.rs`: 脆弱性検出デモ。
-
-## ⚠️ Note on memscan
-
-動的解析ツール `memscan` は現在、Windows環境でのファイルロック問題を回避するため、デフォルトのビルド構成から除外されています。利用する場合は `Cargo.toml` の `[[bin]]` セクションのコメントアウトを解除してください。
-
-## 📜 License
+## 📜 ライセンス
 
 MIT License
