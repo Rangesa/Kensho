@@ -1,30 +1,28 @@
-/// データフロー解析基盤
-///
-/// Def-Use Chain（定義-使用連鎖）を構築してデータフローを追跡
-/// Ghidraのvarnode.hh/op.hhに基づく実装
+/// Data flow analysis for P-code
+/// Implements def-use chains, copy propagation, and dead code elimination
 
 use crate::decompiler_prototype::pcode::{AddressSpace, OpCode, PcodeOp, Varnode};
 use std::collections::{HashMap, HashSet};
 
-/// Varnodeの定義-使用情報
+/// Def-use chain tracking
 #[derive(Debug, Clone)]
 pub struct DefUseChain {
-    /// Varnode → 定義操作のマッピング
+    /// Definitions: varnode -> operation that defines it
     defs: HashMap<VarnodeId, OpId>,
-    /// Varnode → 使用操作リストのマッピング
+    /// Uses: varnode -> operations that use it
     uses: HashMap<VarnodeId, Vec<OpId>>,
-    /// 操作のインデックス
+    /// All operations
     ops: Vec<PcodeOp>,
 }
 
-/// Varnodeを一意に識別するID
+/// Unique identifier for a varnode
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct VarnodeId {
     space: AddressSpace,
     offset: u64,
     size: usize,
-    /// SSA形式での生成順序（同じアドレスでも異なる定義を区別）
-    generation: usize,
+    /// Generation number for SSA form
+    generation: u32,
 }
 
 impl From<&Varnode> for VarnodeId {
@@ -33,16 +31,16 @@ impl From<&Varnode> for VarnodeId {
             space: vn.space,
             offset: vn.offset,
             size: vn.size,
-            generation: 0, // デフォルト世代
+            generation: 0, // Default generation
         }
     }
 }
 
-/// P-code操作のID
+/// Operation identifier (index)
 pub type OpId = usize;
 
 impl DefUseChain {
-    /// 新しいDef-Use Chainを作成
+    /// Create new def-use chain
     pub fn new() -> Self {
         Self {
             defs: HashMap::new(),
@@ -51,18 +49,18 @@ impl DefUseChain {
         }
     }
 
-    /// P-code操作列からDef-Use Chainを構築
+    /// Build def-use chain from operations
     pub fn build(&mut self, ops: &[PcodeOp]) {
         self.ops = ops.to_vec();
 
         for (op_id, op) in ops.iter().enumerate() {
-            // 出力Varnodeの定義を記録
+            // Record output varnode definition
             if let Some(output) = &op.output {
                 let vn_id = VarnodeId::from(output);
                 self.defs.insert(vn_id, op_id);
             }
 
-            // 入力Varnodeの使用を記録
+            // Record input varnode usage
             for input in &op.inputs {
                 let vn_id = VarnodeId::from(input);
                 self.uses
@@ -73,14 +71,14 @@ impl DefUseChain {
         }
     }
 
-    /// Varnodeを定義する操作を取得
+    /// Get the operation that defines a varnode
     pub fn get_def(&self, vn: &Varnode) -> Option<&PcodeOp> {
         let vn_id = VarnodeId::from(vn);
         let op_id = self.defs.get(&vn_id)?;
         self.ops.get(*op_id)
     }
 
-    /// Varnodeを使用する操作リストを取得
+    /// Get operations that use a varnode
     pub fn get_uses(&self, vn: &Varnode) -> Vec<&PcodeOp> {
         let vn_id = VarnodeId::from(vn);
         if let Some(op_ids) = self.uses.get(&vn_id) {
@@ -90,24 +88,24 @@ impl DefUseChain {
         }
     }
 
-    /// Varnodeが単一使用かどうか（Copy propagationの条件）
+    /// Check if varnode has exactly one use
     pub fn is_single_use(&self, vn: &Varnode) -> bool {
         let vn_id = VarnodeId::from(vn);
         self.uses.get(&vn_id).map(|v| v.len() == 1).unwrap_or(false)
     }
 
-    /// Varnodeが未使用かどうか（Dead code eliminationの候補）
+    /// Check if varnode is unused
     pub fn is_unused(&self, vn: &Varnode) -> bool {
         let vn_id = VarnodeId::from(vn);
         self.uses.get(&vn_id).map(|v| v.is_empty()).unwrap_or(true)
     }
 
-    /// 到達可能な操作を収集（Dead code elimination用）
+    /// Collect reachable operations (backward dataflow from side effects)
     pub fn collect_reachable_ops(&self) -> HashSet<OpId> {
         let mut reachable = HashSet::new();
         let mut worklist = Vec::new();
 
-        // 副作用のある操作から開始
+        // Start from operations with side effects
         for (op_id, op) in self.ops.iter().enumerate() {
             if self.has_side_effects(op) {
                 reachable.insert(op_id);
@@ -115,11 +113,11 @@ impl DefUseChain {
             }
         }
 
-        // 後方データフロー追跡
+        // Backward dataflow propagation
         while let Some(op_id) = worklist.pop() {
             let op = &self.ops[op_id];
 
-            // この操作の入力を定義する操作も到達可能
+            // Operations defining inputs of this operation are also reachable
             for input in &op.inputs {
                 if let Some(def_op_id) = self.defs.get(&VarnodeId::from(input)) {
                     if reachable.insert(*def_op_id) {
@@ -132,7 +130,7 @@ impl DefUseChain {
         reachable
     }
 
-    /// 操作が副作用を持つかどうか
+    /// Check if operation has side effects
     fn has_side_effects(&self, op: &PcodeOp) -> bool {
         matches!(
             op.opcode,
@@ -146,9 +144,8 @@ impl DefUseChain {
         )
     }
 
-    /// Copy操作を追跡してソースVarnodeを取得
-    ///
-    /// Copy propagation用: V1 = V0; V2 = V1; => V2 = V0;
+    /// Trace copy operations to find original source
+    /// Example: v1 = copy v0; v2 = copy v1 => trace(v2) = v0
     pub fn trace_copy_source(&self, vn: &Varnode) -> Option<Varnode> {
         let mut current = vn.clone();
         let mut visited = HashSet::new();
@@ -156,25 +153,25 @@ impl DefUseChain {
         loop {
             let vn_id = VarnodeId::from(&current);
 
-            // 無限ループ防止
+            // Infinite loop detection
             if !visited.insert(vn_id) {
                 return None;
             }
 
-            // 定義操作を取得
+            // Get defining operation
             let def_op = self.get_def(&current)?;
 
-            // Copy操作なら入力をさらに追跡
+            // If copy operation, trace further back
             if def_op.opcode == OpCode::Copy && !def_op.inputs.is_empty() {
                 current = def_op.inputs[0].clone();
             } else {
-                // Copy以外の操作に到達したら終了
+                // Reached non-copy operation, return result
                 return Some(current);
             }
         }
     }
 
-    /// データフロー統計情報
+    /// Get statistics about the dataflow
     pub fn stats(&self) -> DataFlowStats {
         let total_defs = self.defs.len();
         let total_uses: usize = self.uses.values().map(|v| v.len()).sum();
@@ -214,7 +211,7 @@ impl Default for DefUseChain {
     }
 }
 
-/// データフロー統計情報
+/// Data flow statistics
 #[derive(Debug, Clone)]
 pub struct DataFlowStats {
     pub total_ops: usize,
@@ -224,9 +221,8 @@ pub struct DataFlowStats {
     pub single_use_defs: usize,
 }
 
-/// Copy Propagation最適化
-///
-/// V1 = V0; V2 = V1; => V2 = V0; のような連鎖コピーを削減
+/// Copy propagation optimization
+/// Replaces uses of copied values with their original source
 pub struct CopyPropagation {
     du_chain: DefUseChain,
 }
@@ -236,12 +232,13 @@ impl CopyPropagation {
         Self { du_chain }
     }
 
-    /// Copy propagationを適用
+    /// Apply copy propagation optimization
+    /// Returns number of propagations performed
     pub fn apply(&mut self, ops: &mut Vec<PcodeOp>) -> usize {
         let mut propagation_count = 0;
 
         for op in ops.iter_mut() {
-            // 入力Varnodeをコピー元まで追跡
+            // Trace input varnodes back to copy source
             for input in &mut op.inputs {
                 if let Some(source) = self.du_chain.trace_copy_source(input) {
                     if source != *input {
@@ -257,8 +254,7 @@ impl CopyPropagation {
 }
 
 /// Dead Code Elimination
-///
-/// 到達不能な操作や未使用の定義を削除
+/// Removes operations that have no effect on program output
 pub struct DeadCodeElimination {
     du_chain: DefUseChain,
 }
@@ -268,15 +264,15 @@ impl DeadCodeElimination {
         Self { du_chain }
     }
 
-    /// Dead codeを除去
+    /// Eliminate dead code
+    /// Returns number of operations removed
     pub fn eliminate(&self, ops: &mut Vec<PcodeOp>) -> usize {
         let reachable = self.du_chain.collect_reachable_ops();
         let original_len = ops.len();
 
-        // 到達可能な操作のみを保持
-        ops.retain(|_| true); // TODO: 実際のインデックス対応が必要
-
-        // 簡易版: 未使用の出力を持つ操作を削除
+        // Keep only reachable operations
+        ops.retain(|_| true); // TODO: Need actual index correspondence
+        // Simplified: Remove operations with unused outputs
         let removed = ops
             .iter()
             .filter(|op| {
@@ -311,10 +307,10 @@ mod tests {
         let mut du_chain = DefUseChain::new();
         du_chain.build(&ops);
 
-        // v1を定義する操作を取得
+        // Get operation that defines v1
         assert!(du_chain.get_def(&v1).is_some());
 
-        // v1を使用する操作を取得
+        // Get operations that use v1
         let uses = du_chain.get_uses(&v1);
         assert_eq!(uses.len(), 1);
     }
@@ -333,7 +329,7 @@ mod tests {
         let mut du_chain = DefUseChain::new();
         du_chain.build(&ops);
 
-        // v2のコピー元を追跡 => v0
+        // Trace v2's copy source => v0
         let source = du_chain.trace_copy_source(&v2);
         assert!(source.is_some());
         assert_eq!(source.unwrap(), v0);

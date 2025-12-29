@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+﻿use anyhow::{Context, Result};
 use goblin::{Object, pe::PE, elf::Elf, mach::Mach};
 use std::fs;
 use std::path::Path;

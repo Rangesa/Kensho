@@ -1,5 +1,5 @@
-/// 関数解析機能
-/// エクスポート関数の検出、関数境界の特定、関数間制御フローの解析
+/// Function detection and call graph analysis
+/// Identifies functions and builds call relationships
 
 use super::pcode::*;
 use super::cfg::*;
@@ -7,30 +7,30 @@ use anyhow::Result;
 use goblin::pe::PE;
 use std::collections::{HashMap, HashSet};
 
-/// 関数情報
+/// Function information
 #[derive(Debug, Clone)]
 pub struct FunctionInfo {
-    /// 関数名（もしあれば）
+    /// Function name (if known)
     pub name: Option<String>,
-    /// 開始アドレス（仮想アドレス）
+    /// Start address
     pub start_address: u64,
-    /// 終了アドレス（推定）
+    /// End address
     pub end_address: Option<u64>,
-    /// 関数のサイズ（バイト）
+    /// Function size in bytes
     pub size: Option<usize>,
-    /// エクスポート関数かどうか
+    /// Is this an exported function
     pub is_export: bool,
-    /// 呼び出す関数のリスト
+    /// Functions called by this function
     pub callees: Vec<u64>,
-    /// この関数を呼び出す関数のリスト
+    /// Functions calling this function
     pub callers: Vec<u64>,
 }
 
-/// 関数検出器
+/// Function detector
 pub struct FunctionDetector {
-    /// 検出された関数のマップ（アドレス → 関数情報）
+    /// Detected functions
     functions: HashMap<u64, FunctionInfo>,
-    /// コール命令のマップ（呼び出し元アドレス → 呼び出し先アドレス）
+    /// Call graph (caller -> callees)
     call_graph: HashMap<u64, Vec<u64>>,
 }
 
@@ -42,9 +42,8 @@ impl FunctionDetector {
         }
     }
 
-    /// PEファイルからエクスポート関数を検出
+    /// Detect exported functions from PE
     pub fn detect_exports(&mut self, pe: &PE, image_base: u64) -> Result<()> {
-        // エクスポートテーブルを解析
         for export in &pe.exports {
             if let Some(name) = export.name {
                 let va = image_base + export.rva as u64;
@@ -66,17 +65,14 @@ impl FunctionDetector {
         Ok(())
     }
 
-    /// P-code命令列から関数のエントリーポイントを検出
-    /// 典型的なプロローグパターンを探す: push rbp; mov rbp, rsp
+    /// Detect function prologues in P-code
+    /// TODO: More sophisticated pattern matching
     pub fn detect_function_prologues(&mut self, pcodes: &[PcodeOp]) {
         let mut i = 0;
         while i < pcodes.len() {
             let op = &pcodes[i];
 
-            // プロローグパターンの検出
-            // TODO: より高度なパターンマッチング
             if matches!(op.opcode, OpCode::Call) {
-                // Call命令から関数境界を推定
                 if !op.inputs.is_empty() {
                     if let Some(target_addr) = self.extract_call_target(&op.inputs[0]) {
                         self.add_function_if_new(target_addr, None, false);
@@ -89,7 +85,7 @@ impl FunctionDetector {
         }
     }
 
-    /// Call命令のターゲットアドレスを抽出
+    /// Extract call target address from varnode
     fn extract_call_target(&self, input: &Varnode) -> Option<u64> {
         if input.space == AddressSpace::Const {
             Some(input.offset)
@@ -98,7 +94,7 @@ impl FunctionDetector {
         }
     }
 
-    /// 新しい関数を追加（既に存在しない場合のみ）
+    /// Add function if not already present
     fn add_function_if_new(&mut self, address: u64, name: Option<String>, is_export: bool) {
         self.functions.entry(address).or_insert(FunctionInfo {
             name,
@@ -111,15 +107,14 @@ impl FunctionDetector {
         });
     }
 
-    /// Return命令から関数の終了アドレスを推定
-    pub fn estimate_function_boundaries(&mut self, pcodes: &[PcodeOp]) {
+    /// Update function boundaries from return instructions
+    pub fn update_function_boundaries(&mut self, pcodes: &[PcodeOp]) {
         let mut last_ret_address = 0u64;
 
         for op in pcodes {
             if matches!(op.opcode, OpCode::Return) {
                 last_ret_address = op.address;
 
-                // この関数を含む可能性がある範囲を探す
                 for (_, func) in self.functions.iter_mut() {
                     if func.start_address <= op.address && func.end_address.is_none() {
                         func.end_address = Some(op.address);
@@ -132,15 +127,12 @@ impl FunctionDetector {
         }
     }
 
-    /// コールグラフを構築（関数間の呼び出し関係）
-    pub fn build_call_graph(&mut self) {
-        // callers と callees を更新
+    /// Update call graph edges
+    pub fn update_call_graph(&mut self) {
         for (&caller_addr, callees) in &self.call_graph {
-            // caller が属する関数を見つける
             let caller_func = self.find_function_containing(caller_addr);
 
             for &callee_addr in callees {
-                // callee の関数を取得
                 if let Some(callee_func) = self.functions.get_mut(&callee_addr) {
                     if let Some(caller_func_addr) = caller_func {
                         if !callee_func.callers.contains(&caller_func_addr) {
@@ -149,7 +141,6 @@ impl FunctionDetector {
                     }
                 }
 
-                // caller の callees に追加
                 if let Some(caller_func_addr) = caller_func {
                     if let Some(caller_func) = self.functions.get_mut(&caller_func_addr) {
                         if !caller_func.callees.contains(&callee_addr) {
@@ -161,7 +152,7 @@ impl FunctionDetector {
         }
     }
 
-    /// 指定されたアドレスを含む関数を見つける
+    /// Find function containing an address
     fn find_function_containing(&self, address: u64) -> Option<u64> {
         for (&func_addr, func) in &self.functions {
             if func.start_address <= address {
@@ -170,7 +161,6 @@ impl FunctionDetector {
                         return Some(func_addr);
                     }
                 } else {
-                    // 終了アドレスが不明な場合は、次の関数の開始までとする
                     return Some(func_addr);
                 }
             }
@@ -178,17 +168,17 @@ impl FunctionDetector {
         None
     }
 
-    /// 全関数情報を取得
+    /// Get all functions
     pub fn get_functions(&self) -> &HashMap<u64, FunctionInfo> {
         &self.functions
     }
 
-    /// 特定の関数情報を取得
+    /// Get function by address
     pub fn get_function(&self, address: u64) -> Option<&FunctionInfo> {
         self.functions.get(&address)
     }
 
-    /// エクスポート関数のみを取得
+    /// Get exported functions
     pub fn get_export_functions(&self) -> Vec<&FunctionInfo> {
         self.functions
             .values()
@@ -196,12 +186,12 @@ impl FunctionDetector {
             .collect()
     }
 
-    /// コールグラフを取得
+    /// Get call graph
     pub fn get_call_graph(&self) -> &HashMap<u64, Vec<u64>> {
         &self.call_graph
     }
 
-    /// 関数の統計情報
+    /// Get function statistics
     pub fn get_statistics(&self) -> FunctionStatistics {
         FunctionStatistics {
             total_functions: self.functions.len(),
@@ -211,7 +201,7 @@ impl FunctionDetector {
     }
 }
 
-/// 関数統計情報
+/// Function statistics
 #[derive(Debug, Clone)]
 pub struct FunctionStatistics {
     pub total_functions: usize,
@@ -227,7 +217,6 @@ mod tests {
     fn test_function_detector() {
         let mut detector = FunctionDetector::new();
 
-        // テスト用の関数を追加
         detector.add_function_if_new(0x1000, Some("main".to_string()), true);
         detector.add_function_if_new(0x2000, Some("helper".to_string()), false);
 

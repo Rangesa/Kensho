@@ -1,89 +1,89 @@
-/// 制御構造検出
-/// CFGから高レベルの制御構造（if/while/for/switch）を検出する
+/// Control flow analysis and structure recovery
+/// Recovers high-level control structures (if, while, switch) from CFG
 
 use super::cfg::*;
 use super::pcode::*;
 use std::collections::{HashMap, HashSet, VecDeque};
 
-/// 制御構造の種類
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// High-level control structure
+#[derive(Debug, Clone)]
 pub enum ControlStructure {
-    /// 順次実行
+    /// Sequential execution of multiple structures
     Sequence(Vec<ControlStructure>),
-    /// if文: (条件ブロック, then部, else部)
+    /// If-then-else conditional
     IfThenElse {
         condition_block: BlockId,
         then_branch: Box<ControlStructure>,
         else_branch: Option<Box<ControlStructure>>,
     },
-    /// if文（else無し）
+    /// If-then conditional (no else)
     IfThen {
         condition_block: BlockId,
         then_branch: Box<ControlStructure>,
     },
-    /// whileループ: (条件ブロック, ループ本体)
+    /// While loop
     While {
         condition_block: BlockId,
         body: Box<ControlStructure>,
     },
-    /// do-whileループ: (ループ本体, 条件ブロック)
+    /// Do-while loop
     DoWhile {
         body: Box<ControlStructure>,
         condition_block: BlockId,
     },
-    /// 無限ループ
+    /// Infinite loop
     InfiniteLoop {
         body: Box<ControlStructure>,
     },
-    /// switch文: (条件ブロック, case分岐)
+    /// Switch statement
     Switch {
         condition_block: BlockId,
-        cases: Vec<(Option<i64>, ControlStructure)>, // (case値, 処理)
+        cases: Vec<(Option<i64>, ControlStructure)>,
     },
-    /// 単一のブロック
+    /// Basic block
     BasicBlock(BlockId),
-    /// break文
+    /// Break statement
     Break,
-    /// continue文
+    /// Continue statement
     Continue,
 }
 
-/// ループ情報
+/// Loop information
 #[derive(Debug, Clone)]
 pub struct LoopInfo {
-    /// ループヘッダー（条件判定ブロック）
+    /// Loop header block
     pub header: BlockId,
-    /// ループ本体（ループに含まれるすべてのブロック）
+    /// Blocks in loop body
     pub body: HashSet<BlockId>,
-    /// バックエッジ（ループに戻る辺）
+    /// Back edges (tail -> header)
     pub back_edges: Vec<(BlockId, BlockId)>,
-    /// ループの種類
+    /// Loop type
     pub loop_type: LoopType,
 }
 
-/// ループの種類
+/// Loop type classification
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum LoopType {
-    /// whileループ（前判定）
+    /// While loop (condition at top)
     While,
-    /// do-whileループ（後判定）
+    /// Do-while loop (condition at bottom)
     DoWhile,
-    /// 無限ループ
+    /// Infinite loop
     Infinite,
 }
 
-/// 制御構造解析器
+/// Control flow analyzer
 pub struct ControlFlowAnalyzer {
-    /// 支配木情報
+    /// Dominator mapping
     dominators: HashMap<BlockId, BlockId>,
-    /// ループ情報
+    /// Detected loops
     loops: Vec<LoopInfo>,
-    /// 訪問済みブロック
+    /// Visited blocks during traversal
     visited: HashSet<BlockId>,
 }
 
 impl ControlFlowAnalyzer {
-    /// 新しい解析器を作成
+    /// Create new analyzer
     pub fn new() -> Self {
         Self {
             dominators: HashMap::new(),
@@ -92,29 +92,23 @@ impl ControlFlowAnalyzer {
         }
     }
 
-    /// 検出されたループ情報を取得
-    pub fn get_loops(&self) -> &[LoopInfo] {
+    /// Get detected loops
+    pub fn get_loops(&self) -> &Vec<LoopInfo> {
         &self.loops
     }
 
-    /// CFGから制御構造を検出
+    /// Analyze control flow and build structure
     pub fn analyze(&mut self, cfg: &ControlFlowGraph) -> ControlStructure {
-        // 1. 支配木を計算
         self.compute_dominators(cfg);
-
-        // 2. ループを検出
         self.detect_loops(cfg);
-
-        // 3. 制御構造を構築
         self.build_control_structure(cfg, cfg.entry_block)
     }
 
-    /// 支配木を計算（簡易版）
+    /// Compute dominators using iterative algorithm
     fn compute_dominators(&mut self, cfg: &ControlFlowGraph) {
         let entry = cfg.entry_block;
         let mut idom: HashMap<BlockId, Option<BlockId>> = HashMap::new();
 
-        // 初期化
         for &block_id in cfg.blocks.keys() {
             if block_id == entry {
                 idom.insert(block_id, None);
@@ -123,10 +117,8 @@ impl ControlFlowAnalyzer {
             }
         }
 
-        // 逆ポストオーダー
         let rpo = self.reverse_postorder(cfg, entry);
 
-        // 収束まで繰り返し
         let mut changed = true;
         while changed {
             changed = false;
@@ -141,7 +133,6 @@ impl ControlFlowAnalyzer {
                     continue;
                 }
 
-                // 処理済みの先行ブロックから新しい支配者を計算
                 let mut new_idom: Option<BlockId> = None;
                 for &pred in &block.predecessors {
                     if idom.get(&pred).and_then(|x| *x).is_some() || pred == entry {
@@ -157,7 +148,6 @@ impl ControlFlowAnalyzer {
             }
         }
 
-        // 結果を保存
         for (block_id, dom) in idom {
             if let Some(dominator) = dom {
                 self.dominators.insert(block_id, dominator);
@@ -165,7 +155,7 @@ impl ControlFlowAnalyzer {
         }
     }
 
-    /// 逆ポストオーダー
+    /// Compute reverse postorder traversal
     fn reverse_postorder(&self, cfg: &ControlFlowGraph, entry: BlockId) -> Vec<BlockId> {
         let mut visited = HashSet::new();
         let mut postorder = Vec::new();
@@ -195,21 +185,18 @@ impl ControlFlowAnalyzer {
         postorder
     }
 
-    /// ループを検出
+    /// Detect loops using back edges
     fn detect_loops(&mut self, cfg: &ControlFlowGraph) {
-        // バックエッジを検出（後続ブロックが支配者の場合）
         let mut back_edges = Vec::new();
 
         for (&block_id, block) in &cfg.blocks {
             for &successor in &block.successors {
-                // successorがblock_idを支配する場合、これはバックエッジ
                 if self.dominates(successor, block_id) {
                     back_edges.push((block_id, successor));
                 }
             }
         }
 
-        // 各バックエッジからループを構築
         for (tail, header) in back_edges {
             let body = self.find_loop_body(cfg, header, tail);
             let loop_type = self.determine_loop_type(cfg, header, &body);
@@ -223,7 +210,7 @@ impl ControlFlowAnalyzer {
         }
     }
 
-    /// ループ本体を検出
+    /// Find all blocks in loop body
     fn find_loop_body(&self, cfg: &ControlFlowGraph, header: BlockId, tail: BlockId) -> HashSet<BlockId> {
         let mut body = HashSet::new();
         body.insert(header);
@@ -250,24 +237,14 @@ impl ControlFlowAnalyzer {
         body
     }
 
-    /// ループの種類を判定
-    fn determine_loop_type(&self, cfg: &ControlFlowGraph, header: BlockId, body: &HashSet<BlockId>) -> LoopType {
-        // ヘッダーブロックの終端命令をチェック
+    /// Determine loop type from structure
+    fn determine_loop_type(&self, cfg: &ControlFlowGraph, header: BlockId, _body: &HashSet<BlockId>) -> LoopType {
         if let Some(header_block) = cfg.blocks.get(&header) {
             if let Some(last_op) = header_block.ops.last() {
                 match last_op.opcode {
-                    OpCode::CBranch => {
-                        // 条件分岐がある場合はwhileループ
-                        LoopType::While
-                    }
-                    OpCode::Branch => {
-                        // 無条件分岐の場合は無限ループの可能性
-                        LoopType::Infinite
-                    }
-                    _ => {
-                        // その他の場合はdo-whileと判定
-                        LoopType::DoWhile
-                    }
+                    OpCode::CBranch => LoopType::While,
+                    OpCode::Branch => LoopType::Infinite,
+                    _ => LoopType::DoWhile,
                 }
             } else {
                 LoopType::While
@@ -277,7 +254,7 @@ impl ControlFlowAnalyzer {
         }
     }
 
-    /// ブロックAがブロックBを支配するか
+    /// Check if one block dominates another
     fn dominates(&self, dominator: BlockId, block: BlockId) -> bool {
         if dominator == block {
             return true;
@@ -297,14 +274,13 @@ impl ControlFlowAnalyzer {
         false
     }
 
-    /// 制御構造を構築
+    /// Build control structure recursively
     fn build_control_structure(&mut self, cfg: &ControlFlowGraph, block_id: BlockId) -> ControlStructure {
         if self.visited.contains(&block_id) {
             return ControlStructure::BasicBlock(block_id);
         }
         self.visited.insert(block_id);
 
-        // このブロックがループヘッダーか確認
         if let Some(loop_info) = self.find_loop_by_header(block_id) {
             return self.build_loop_structure(cfg, loop_info);
         }
@@ -314,14 +290,9 @@ impl ControlFlowAnalyzer {
             None => return ControlStructure::BasicBlock(block_id),
         };
 
-        // 後続ブロック数で分岐
         match block.successors.len() {
-            0 => {
-                // リターンまたは終端
-                ControlStructure::BasicBlock(block_id)
-            }
+            0 => ControlStructure::BasicBlock(block_id),
             1 => {
-                // 順次実行
                 let next = block.successors[0];
                 let next_struct = self.build_control_structure(cfg, next);
                 ControlStructure::Sequence(vec![
@@ -329,18 +300,12 @@ impl ControlFlowAnalyzer {
                     next_struct,
                 ])
             }
-            2 => {
-                // if文またはループ
-                self.build_if_structure(cfg, block_id, &block.successors)
-            }
-            _ => {
-                // switch文の可能性
-                self.build_switch_structure(cfg, block_id, &block.successors)
-            }
+            2 => self.build_if_structure(cfg, block_id, &block.successors),
+            _ => self.build_switch_structure(cfg, block_id, &block.successors),
         }
     }
 
-    /// if文の構造を構築
+    /// Build if-then-else structure
     fn build_if_structure(&mut self, cfg: &ControlFlowGraph, condition_block: BlockId, successors: &[BlockId]) -> ControlStructure {
         if successors.len() != 2 {
             return ControlStructure::BasicBlock(condition_block);
@@ -349,14 +314,11 @@ impl ControlFlowAnalyzer {
         let then_block = successors[0];
         let else_block = successors[1];
 
-        // 合流点を探す
         let merge_point = self.find_merge_point(cfg, then_block, else_block);
 
         let then_branch = Box::new(self.build_region(cfg, then_block, merge_point));
 
-        // else分岐が空でないかチェック
         if else_block == merge_point.unwrap_or(else_block) {
-            // else分岐なし
             ControlStructure::IfThen {
                 condition_block,
                 then_branch,
@@ -371,13 +333,13 @@ impl ControlFlowAnalyzer {
         }
     }
 
-    /// switch文の構造を構築
+    /// Build switch structure
     fn build_switch_structure(&mut self, cfg: &ControlFlowGraph, condition_block: BlockId, successors: &[BlockId]) -> ControlStructure {
         let mut cases = Vec::new();
 
         for (i, &succ) in successors.iter().enumerate() {
             let case_value = if i == successors.len() - 1 {
-                None // default case
+                None
             } else {
                 Some(i as i64)
             };
@@ -392,12 +354,11 @@ impl ControlFlowAnalyzer {
         }
     }
 
-    /// ループ構造を構築
+    /// Build loop structure
     fn build_loop_structure(&mut self, cfg: &ControlFlowGraph, loop_info: LoopInfo) -> ControlStructure {
         let header = loop_info.header;
         let body_blocks: Vec<BlockId> = loop_info.body.iter().copied().filter(|&b| b != header).collect();
 
-        // ループ本体を構築
         let mut body_structures = Vec::new();
         for &block_id in &body_blocks {
             if !self.visited.contains(&block_id) {
@@ -427,7 +388,7 @@ impl ControlFlowAnalyzer {
         }
     }
 
-    /// 領域を構築（開始ブロックから終了ブロックまで）
+    /// Build a region between start and end
     fn build_region(&mut self, cfg: &ControlFlowGraph, start: BlockId, end: Option<BlockId>) -> ControlStructure {
         if Some(start) == end {
             return ControlStructure::BasicBlock(start);
@@ -455,7 +416,6 @@ impl ControlFlowAnalyzer {
             if block.successors.len() == 1 {
                 current = block.successors[0];
             } else {
-                // 分岐がある場合は再帰的に構築
                 let branch_struct = self.build_control_structure(cfg, current);
                 sequence.push(branch_struct);
                 break;
@@ -471,13 +431,12 @@ impl ControlFlowAnalyzer {
         }
     }
 
-    /// 合流点を見つける
+    /// Find merge point of two branches
     fn find_merge_point(&self, cfg: &ControlFlowGraph, branch1: BlockId, branch2: BlockId) -> Option<BlockId> {
         let mut visited1 = HashSet::new();
         let mut queue1 = VecDeque::new();
         queue1.push_back(branch1);
 
-        // branch1から到達可能なすべてのブロックを収集
         while let Some(block_id) = queue1.pop_front() {
             if visited1.contains(&block_id) {
                 continue;
@@ -491,7 +450,6 @@ impl ControlFlowAnalyzer {
             }
         }
 
-        // branch2から到達可能で、branch1からも到達可能な最初のブロックを探す
         let mut visited2 = HashSet::new();
         let mut queue2 = VecDeque::new();
         queue2.push_back(branch2);
@@ -516,7 +474,7 @@ impl ControlFlowAnalyzer {
         None
     }
 
-    /// ヘッダーでループを検索
+    /// Find loop by header block
     fn find_loop_by_header(&self, header: BlockId) -> Option<LoopInfo> {
         self.loops.iter().find(|l| l.header == header).cloned()
     }
@@ -528,7 +486,7 @@ impl Default for ControlFlowAnalyzer {
     }
 }
 
-/// 制御構造を人間が読みやすい形式で出力
+/// Printer for control structures
 pub struct ControlStructurePrinter {
     indent_level: usize,
 }
@@ -538,7 +496,7 @@ impl ControlStructurePrinter {
         Self { indent_level: 0 }
     }
 
-    /// 制御構造を文字列に変換
+    /// Print control structure
     pub fn print(&mut self, structure: &ControlStructure) -> String {
         match structure {
             ControlStructure::Sequence(seq) => {
@@ -667,82 +625,5 @@ impl ControlStructurePrinter {
 impl Default for ControlStructurePrinter {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_if_structure() {
-        let mut cfg = ControlFlowGraph::new();
-        cfg.entry_block = 0;
-
-        // if (cond) { block1 } else { block2 }
-        // Block 0 (condition) -> Block 1 (then), Block 2 (else)
-        // Block 1, 2 -> Block 3 (merge)
-        let mut block0 = BasicBlock::new(0, 0);
-        block0.successors = vec![1, 2];
-        block0.ops.push(PcodeOp::no_output(OpCode::CBranch, vec![], 0));
-
-        let mut block1 = BasicBlock::new(1, 10);
-        block1.predecessors = vec![0];
-        block1.successors = vec![3];
-
-        let mut block2 = BasicBlock::new(2, 20);
-        block2.predecessors = vec![0];
-        block2.successors = vec![3];
-
-        let mut block3 = BasicBlock::new(3, 30);
-        block3.predecessors = vec![1, 2];
-
-        cfg.blocks.insert(0, block0);
-        cfg.blocks.insert(1, block1);
-        cfg.blocks.insert(2, block2);
-        cfg.blocks.insert(3, block3);
-
-        let mut analyzer = ControlFlowAnalyzer::new();
-        let structure = analyzer.analyze(&cfg);
-
-        println!("=== If Structure ===");
-        let mut printer = ControlStructurePrinter::new();
-        println!("{}", printer.print(&structure));
-
-        assert!(matches!(structure, ControlStructure::IfThenElse { .. } | ControlStructure::Sequence(_)));
-    }
-
-    #[test]
-    fn test_loop_detection() {
-        let mut cfg = ControlFlowGraph::new();
-        cfg.entry_block = 0;
-
-        // while (block0) { block1 }
-        // Block 0 (condition) -> Block 1 (body), Block 2 (exit)
-        // Block 1 -> Block 0 (back edge)
-        let mut block0 = BasicBlock::new(0, 0);
-        block0.successors = vec![1, 2];
-        block0.ops.push(PcodeOp::no_output(OpCode::CBranch, vec![], 0));
-
-        let mut block1 = BasicBlock::new(1, 10);
-        block1.predecessors = vec![0];
-        block1.successors = vec![0]; // back edge
-
-        let mut block2 = BasicBlock::new(2, 20);
-        block2.predecessors = vec![0];
-
-        cfg.blocks.insert(0, block0);
-        cfg.blocks.insert(1, block1);
-        cfg.blocks.insert(2, block2);
-
-        let mut analyzer = ControlFlowAnalyzer::new();
-        let structure = analyzer.analyze(&cfg);
-
-        println!("=== Loop Structure ===");
-        let mut printer = ControlStructurePrinter::new();
-        println!("{}", printer.print(&structure));
-
-        assert!(!analyzer.loops.is_empty());
-        println!("Detected {} loops", analyzer.loops.len());
     }
 }

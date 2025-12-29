@@ -1,5 +1,5 @@
 [package]
-name = "ghidra-mcp-native"
+name = "kensho-mcp"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,8 +12,12 @@ async-trait = "0.1"
 
 # バイナリ解析
 goblin = "0.8"           # ELF/PE/Mach-Oパーサー（超高速）
-capstone = "0.12"        # 逆アセンブラ（多アーキテクチャ対応）
+capstone = "0.12"        # 逆アセンブラ（多アーキテクチャ対応、Phase 2で削除予定）
+iced-x86 = { version = "1.21", features = ["decoder", "instr_info"] }  # x86-64デコーダ（Phase 1）
 object = "0.32"          # バイナリオブジェクト操作
+gimli = "0.28"       # DWARF解析ライブラリ
+addr2line = "0.21"   # アドレス→行番号変換
+pdb = "0.8"          # PDBファイル解析ライブラリ
 
 # 制御フロー・データフロー解析用
 petgraph = "0.6"         # グラフアルゴリズム
@@ -26,12 +30,20 @@ thiserror = "1.0"
 # ハッシュ計算
 xxhash-rust = { version = "0.8", features = ["xxh3"] }
 
+# SMTソルバ: kensho SMTを使用（z3依存を完全削除）
+
 # 並列処理（オプション）
 rayon = { version = "1.8", optional = true }
+
+# 乱数生成（最適化処理で使用）
+rand = "0.8"
 
 # ログ
 tracing = "0.1"
 tracing-subscriber = "0.3"
+
+# 日時処理
+chrono = "0.4"
 
 # CLI（デバッグ用）
 clap = { version = "4.4", features = ["derive"] }
@@ -47,6 +59,10 @@ windows = { version = "0.58", features = [
     "Win32_System_Diagnostics_ToolHelp"
 ] }
 
+[build-dependencies]
+toml = "0.8"             # セマンティックテーブルパース用
+serde = { version = "1.0", features = ["derive"] }
+
 [dev-dependencies]
 criterion = "0.5"
 
@@ -55,16 +71,19 @@ default = []
 parallel = ["rayon"]
 
 [lib]
-name = "ghidra_mcp"
+name = "kensho_mcp"
 path = "src/lib.rs"
 
 [[bin]]
-name = "ghidra-mcp"
+name = "kensho-mcp"
 path = "src/main.rs"
 
-[[bin]]
-name = "memscan"
-path = "src/bin/memscan.rs"
+# memscanはファイルロック問題により一時的にコメントアウト
+# Windowsでの並列ビルド時にファイルロックが発生する問題を回避
+# 個別にビルドする場合: cargo build --bin memscan
+# [[bin]]
+# name = "memscan"
+# path = "src/bin/memscan.rs"
 
 [[example]]
 name = "decompile_demo"
@@ -73,3 +92,19 @@ path = "examples/decompile_demo.rs"
 [[example]]
 name = "pe_analyzer"
 path = "examples/pe_analyzer.rs"
+
+[[example]]
+name = "iced_lifter_demo"
+path = "examples/iced_lifter_demo.rs"
+
+[[example]]
+name = "ww_detailed_analysis"
+path = "examples/ww_detailed_analysis.rs"
+
+[[example]]
+name = "question_analyzer"
+path = "examples/question_analyzer.rs"
+
+[[example]]
+name = "vulnerability_detection_demo"
+path = "examples/vulnerability_detection_demo.rs"

@@ -1,4 +1,4 @@
-use anyhow::Result;
+﻿use anyhow::Result;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tracing::{info, error};
 use serde::{Deserialize, Serialize};
@@ -39,28 +39,26 @@ struct McpError {
     data: Option<Value>,
 }
 
-/// Ghidra風ネイティブMCPサーバー
-/// Rust実装で超高速・軽量なバイナリ解析をAIエージェントに提供
-#[tokio::main]
+/// Ghidra鬚ｨ繝阪う繝・ぅ繝邦CP繧ｵ繝ｼ繝舌・
+/// Rust螳溯｣・〒雜・ｫ倬溘・霆ｽ驥上↑繝舌う繝翫Μ隗｣譫舌ｒAI繧ｨ繝ｼ繧ｸ繧ｧ繝ｳ繝医↓謠蝉ｾ・#[tokio::main]
 async fn main() -> Result<()> {
-    // ログ初期化
-    tracing_subscriber::fmt()
+    // 繝ｭ繧ｰ蛻晄悄蛹・    tracing_subscriber::fmt()
         .with_target(false)
         .with_level(true)
         .init();
 
-    info!("🦀 Ghidra-MCP Native Server starting...");
+    info!("ｦ Ghidra-MCP Native Server starting...");
 
-    // 解析器を初期化
+    // 隗｣譫仙勣繧貞・譛溷喧
     let analyzer = Arc::new(BinaryAnalyzer::new());
 
-    // 標準入出力でMCP通信
+    // 讓呎ｺ門・蜃ｺ蜉帙〒MCP騾壻ｿ｡
     let stdin = tokio::io::stdin();
     let mut stdout = tokio::io::stdout();
     let mut reader = BufReader::new(stdin);
     let mut line = String::new();
 
-    info!("✅ Server ready, waiting for MCP requests...");
+    info!("笨・Server ready, waiting for MCP requests...");
 
     loop {
         line.clear();
@@ -152,13 +150,13 @@ async fn handle_list_tools() -> Result<Value> {
         "tools": [
             {
                 "name": "analyze_binary",
-                "description": "バイナリファイルの基本情報を解析（形式、アーキテクチャ、エントリポイント等）",
+                "description": "繝舌う繝翫Μ繝輔ぃ繧､繝ｫ縺ｮ蝓ｺ譛ｬ諠・ｱ繧定ｧ｣譫撰ｼ亥ｽ｢蠑上√い繝ｼ繧ｭ繝・け繝√Ε縲√お繝ｳ繝医Μ繝昴う繝ｳ繝育ｭ会ｼ・,
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "path": {
                             "type": "string",
-                            "description": "解析対象のバイナリファイルパス"
+                            "description": "隗｣譫仙ｯｾ雎｡縺ｮ繝舌う繝翫Μ繝輔ぃ繧､繝ｫ繝代せ"
                         }
                     },
                     "required": ["path"]
@@ -166,21 +164,21 @@ async fn handle_list_tools() -> Result<Value> {
             },
             {
                 "name": "disassemble",
-                "description": "指定アドレスから逆アセンブル実行",
+                "description": "謖・ｮ壹い繝峨Ξ繧ｹ縺九ｉ騾・い繧ｻ繝ｳ繝悶Ν螳溯｡・,
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "path": {
                             "type": "string",
-                            "description": "バイナリファイルパス"
+                            "description": "繝舌う繝翫Μ繝輔ぃ繧､繝ｫ繝代せ"
                         },
                         "address": {
                             "type": "string",
-                            "description": "開始アドレス（16進数: 0x1000）"
+                            "description": "髢句ｧ九い繝峨Ξ繧ｹ・・6騾ｲ謨ｰ: 0x1000・・
                         },
                         "count": {
                             "type": "integer",
-                            "description": "逆アセンブルする命令数（デフォルト: 20）",
+                            "description": "騾・い繧ｻ繝ｳ繝悶Ν縺吶ｋ蜻ｽ莉､謨ｰ・医ョ繝輔か繝ｫ繝・ 20・・,
                             "default": 20
                         }
                     },
@@ -189,13 +187,13 @@ async fn handle_list_tools() -> Result<Value> {
             },
             {
                 "name": "find_functions",
-                "description": "バイナリ内の関数を検出・リスト化",
+                "description": "繝舌う繝翫Μ蜀・・髢｢謨ｰ繧呈､懷・繝ｻ繝ｪ繧ｹ繝亥喧",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "path": {
                             "type": "string",
-                            "description": "バイナリファイルパス"
+                            "description": "繝舌う繝翫Μ繝輔ぃ繧､繝ｫ繝代せ"
                         }
                     },
                     "required": ["path"]
@@ -203,17 +201,17 @@ async fn handle_list_tools() -> Result<Value> {
             },
             {
                 "name": "decompile_function",
-                "description": "関数を疑似Cコードにデコンパイル（簡易実装）",
+                "description": "髢｢謨ｰ繧堤桝莨ｼC繧ｳ繝ｼ繝峨↓繝・さ繝ｳ繝代う繝ｫ・育ｰ｡譏灘ｮ溯｣・ｼ・,
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "path": {
                             "type": "string",
-                            "description": "バイナリファイルパス"
+                            "description": "繝舌う繝翫Μ繝輔ぃ繧､繝ｫ繝代せ"
                         },
                         "function_name": {
                             "type": "string",
-                            "description": "関数名またはアドレス"
+                            "description": "髢｢謨ｰ蜷阪∪縺溘・繧｢繝峨Ξ繧ｹ"
                         }
                     },
                     "required": ["path", "function_name"]
@@ -221,17 +219,17 @@ async fn handle_list_tools() -> Result<Value> {
             },
             {
                 "name": "find_strings",
-                "description": "バイナリ内の文字列を抽出",
+                "description": "繝舌う繝翫Μ蜀・・譁・ｭ怜・繧呈歓蜃ｺ",
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "path": {
                             "type": "string",
-                            "description": "バイナリファイルパス"
+                            "description": "繝舌う繝翫Μ繝輔ぃ繧､繝ｫ繝代せ"
                         },
                         "min_length": {
                             "type": "integer",
-                            "description": "最小文字列長（デフォルト: 4）",
+                            "description": "譛蟆乗枚蟄怜・髟ｷ・医ョ繝輔か繝ｫ繝・ 4・・,
                             "default": 4
                         }
                     },
@@ -240,13 +238,13 @@ async fn handle_list_tools() -> Result<Value> {
             },
             {
                 "name": "analyze_imports",
-                "description": "インポートされた関数・ライブラリを解析",
+                "description": "繧､繝ｳ繝昴・繝医＆繧後◆髢｢謨ｰ繝ｻ繝ｩ繧､繝悶Λ繝ｪ繧定ｧ｣譫・,
                 "inputSchema": {
                     "type": "object",
                     "properties": {
                         "path": {
                             "type": "string",
-                            "description": "バイナリファイルパス"
+                            "description": "繝舌う繝翫Μ繝輔ぃ繧､繝ｫ繝代せ"
                         }
                     },
                     "required": ["path"]

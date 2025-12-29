@@ -1,27 +1,25 @@
-/// C疑似コード生成エンジン
-///
-/// Ghidraのprintc.ccに基づくP-code→C言語変換
-/// 式の優先順位、括弧の最小化、型キャストなどを処理
+/// C-like code printer for P-code decompilation
+/// Converts P-code operations into readable C-style pseudocode
 
 use crate::decompiler_prototype::pcode::{AddressSpace, OpCode, PcodeOp, Varnode};
 use crate::decompiler_prototype::type_inference::{Type, TypeInference};
 use std::collections::HashMap;
 
-/// C疑似コード生成器
+/// C code printer
 pub struct CPrinter {
-    /// 型推論結果
+    /// Type inference information
     type_info: TypeInference,
-    /// 変数名マッピング
+    /// Variable name mapping
     var_names: HashMap<VarnodeKey, String>,
-    /// 一時変数カウンタ
+    /// Temporary variable counter
     temp_counter: usize,
-    /// 生成されたコード
+    /// Output buffer
     output: Vec<String>,
-    /// インデントレベル
+    /// Current indentation level
     indent_level: usize,
 }
 
-/// Varnodeを一意に識別するキー
+/// Key for identifying varnodes
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct VarnodeKey {
     space: AddressSpace,
@@ -40,7 +38,7 @@ impl From<&Varnode> for VarnodeKey {
 }
 
 impl CPrinter {
-    /// 新しいC疑似コード生成器を作成
+    /// Create new C printer with type information
     pub fn new(type_info: TypeInference) -> Self {
         Self {
             type_info,
@@ -51,7 +49,7 @@ impl CPrinter {
         }
     }
 
-    /// Varnodeの変数名を取得または生成
+    /// Get or generate variable name for a varnode
     fn get_var_name(&mut self, vn: &Varnode) -> String {
         let key = VarnodeKey::from(vn);
 
@@ -59,28 +57,28 @@ impl CPrinter {
             return name.clone();
         }
 
-        // 変数名を生成
+        // Generate variable name based on address space
         let name = match vn.space {
             AddressSpace::Register => {
-                // レジスタは rN 形式
+                // Registers: rN format
                 format!("r{}", vn.offset)
             }
             AddressSpace::Ram => {
-                // メモリは ptr_ADDR 形式
+                // Memory: ptr_ADDR format
                 format!("ptr_0x{:x}", vn.offset)
             }
             AddressSpace::Stack => {
-                // スタックは stack_N 形式
+                // Stack: stack_N format
                 format!("stack_{}", vn.offset)
             }
             AddressSpace::Unique => {
-                // 一時変数は tmp_N 形式
+                // Temporary variables: tmp_N format
                 let name = format!("tmp_{}", self.temp_counter);
                 self.temp_counter += 1;
                 name
             }
             AddressSpace::Const => {
-                // 定数は値そのまま
+                // Constants: use value directly
                 return format!("{}", vn.offset);
             }
         };
@@ -89,13 +87,13 @@ impl CPrinter {
         name
     }
 
-    /// Varnodeの型名を取得
+    /// Get C type name for a varnode
     fn get_type_name(&self, vn: &Varnode) -> String {
         use crate::decompiler_prototype::type_inference::{IntType, FloatType};
 
         let _key = VarnodeKey::from(vn);
 
-        // 型情報がある場合はそれを使用（現在は未実装のためコメントアウト）
+        // Type information available - use it (currently not implemented, commented out)
         // if let Some(ty) = self.type_info.get_type(&key) {
         //     match ty {
         //         Type::Int(int_ty) => {
@@ -119,7 +117,7 @@ impl CPrinter {
         //         _ => "var".to_string(),
         //     }
         // } else {
-        //     // デフォルトはサイズベースの型
+        //     // Default: size-based type
         //     match vn.size {
         //         1 => "uint8_t".to_string(),
         //         2 => "uint16_t".to_string(),
@@ -129,7 +127,7 @@ impl CPrinter {
         //     }
         // }
 
-        // 簡易版: サイズベースの型のみ
+        // Simplified: size-based types only
         match vn.size {
             1 => "uint8_t".to_string(),
             2 => "uint16_t".to_string(),
@@ -139,34 +137,34 @@ impl CPrinter {
         }
     }
 
-    /// インデントを追加
+    /// Increase indentation level
     fn indent(&mut self) {
         self.indent_level += 1;
     }
 
-    /// インデントを削除
+    /// Decrease indentation level
     fn dedent(&mut self) {
         if self.indent_level > 0 {
             self.indent_level -= 1;
         }
     }
 
-    /// 現在のインデントを取得
+    /// Get current indentation string
     fn current_indent(&self) -> String {
         "  ".repeat(self.indent_level)
     }
 
-    /// 行を追加
+    /// Emit a line of code with current indentation
     fn emit_line(&mut self, line: String) {
         self.output.push(format!("{}{}", self.current_indent(), line));
     }
 
-    /// P-code操作をC式に変換
+    /// Print a single P-code operation as C expression
     fn print_op(&mut self, op: &PcodeOp) -> String {
         use OpCode::*;
 
         match op.opcode {
-            // 代入: output = input
+            // Copy: output = input
             Copy => {
                 if let Some(output) = &op.output {
                     let input_str = self.get_var_name(&op.inputs[0]);
@@ -176,7 +174,7 @@ impl CPrinter {
                 }
             }
 
-            // 算術演算
+            // Integer arithmetic operations
             IntAdd => self.binary_op("+", &op.inputs[0], &op.inputs[1]),
             IntSub => self.binary_op("-", &op.inputs[0], &op.inputs[1]),
             IntMult => self.binary_op("*", &op.inputs[0], &op.inputs[1]),
@@ -185,19 +183,19 @@ impl CPrinter {
             IntRem => self.binary_op("%", &op.inputs[0], &op.inputs[1]),
             IntSRem => self.binary_op("%", &op.inputs[0], &op.inputs[1]),
 
-            // ビット演算
+            // Bitwise operations
             IntAnd => self.binary_op("&", &op.inputs[0], &op.inputs[1]),
             IntOr => self.binary_op("|", &op.inputs[0], &op.inputs[1]),
             IntXor => self.binary_op("^", &op.inputs[0], &op.inputs[1]),
             IntNegate => self.unary_op("~", &op.inputs[0]),
             Int2Comp => self.unary_op("-", &op.inputs[0]),
 
-            // シフト演算
+            // Shift operations
             IntLeft => self.binary_op("<<", &op.inputs[0], &op.inputs[1]),
             IntRight => self.binary_op(">>", &op.inputs[0], &op.inputs[1]),
             IntSRight => self.binary_op(">>", &op.inputs[0], &op.inputs[1]),
 
-            // 比較演算
+            // Comparison operations
             IntEqual => self.binary_op("==", &op.inputs[0], &op.inputs[1]),
             IntNotEqual => self.binary_op("!=", &op.inputs[0], &op.inputs[1]),
             IntLess => self.binary_op("<", &op.inputs[0], &op.inputs[1]),
@@ -205,13 +203,13 @@ impl CPrinter {
             IntSLess => self.binary_op("<", &op.inputs[0], &op.inputs[1]),
             IntSLessEqual => self.binary_op("<=", &op.inputs[0], &op.inputs[1]),
 
-            // ブール演算
+            // Boolean operations
             BoolNegate => self.unary_op("!", &op.inputs[0]),
             BoolAnd => self.binary_op("&&", &op.inputs[0], &op.inputs[1]),
             BoolOr => self.binary_op("||", &op.inputs[0], &op.inputs[1]),
             BoolXor => self.binary_op("^", &op.inputs[0], &op.inputs[1]),
 
-            // メモリ操作
+            // Memory operations
             Load => {
                 if op.inputs.len() >= 2 {
                     let addr = self.get_var_name(&op.inputs[1]);
@@ -241,7 +239,7 @@ impl CPrinter {
                 }
             }
 
-            // 型変換
+            // Type conversions
             IntZExt => {
                 let input_str = self.get_var_name(&op.inputs[0]);
                 if let Some(output) = &op.output {
@@ -259,14 +257,14 @@ impl CPrinter {
                 }
             }
 
-            // ポインタ演算
+            // Pointer operations
             PtrAdd => {
                 let base = self.get_var_name(&op.inputs[0]);
                 let offset = self.get_var_name(&op.inputs[1]);
                 format!("({} + {})", base, offset)
             }
 
-            // SubPiece: ビット抽出
+            // SubPiece: bit extraction
             SubPiece => {
                 let input_str = self.get_var_name(&op.inputs[0]);
                 if op.inputs.len() > 1 && op.inputs[1].space == AddressSpace::Const {
@@ -286,15 +284,14 @@ impl CPrinter {
                 }
             }
 
-            // 制御フロー
+            // Control flow (handled separately)
             Branch | CBranch | Call | Return => {
-                // 制御フローは別途処理
                 String::new()
             }
 
             // SSA
             MultiEqual => {
-                // Phi-nodeは変数定義として扱う
+                // Phi-node: handle as variable assignment
                 if op.inputs.is_empty() {
                     "0".to_string()
                 } else {
@@ -303,32 +300,32 @@ impl CPrinter {
             }
 
             _ => {
-                // その他の操作はコメントとして出力
+                // Other operations: output as comment
                 format!("/* {:?} */", op.opcode)
             }
         }
     }
 
-    /// 二項演算子の文字列化
+    /// Format binary operation
     fn binary_op(&mut self, op: &str, left: &Varnode, right: &Varnode) -> String {
         let left_str = self.get_var_name(left);
         let right_str = self.get_var_name(right);
         format!("({} {} {})", left_str, op, right_str)
     }
 
-    /// 単項演算子の文字列化
+    /// Format unary operation
     fn unary_op(&mut self, op: &str, operand: &Varnode) -> String {
         let operand_str = self.get_var_name(operand);
         format!("{}({})", op, operand_str)
     }
 
-    /// P-code操作列をC疑似コードに変換
+    /// Print P-code operations as C function
     pub fn print(&mut self, ops: &[PcodeOp]) -> String {
         self.output.clear();
         self.emit_line("void decompiled_function(void) {".to_string());
         self.indent();
 
-        // 変数宣言セクション
+        // Variable declaration section
         let mut declared_vars = std::collections::HashSet::new();
 
         for op in ops {
@@ -344,10 +341,10 @@ impl CPrinter {
         }
 
         if !declared_vars.is_empty() {
-            self.emit_line(String::new()); // 空行
+            self.emit_line(String::new()); // Blank line
         }
 
-        // P-code操作を順次変換
+        // Translate P-code operations sequentially
         for op in ops {
             match op.opcode {
                 OpCode::Branch => {
@@ -393,7 +390,7 @@ impl CPrinter {
         self.output.join("\n")
     }
 
-    /// 生成されたコードを取得
+    /// Get generated output
     pub fn get_output(&self) -> String {
         self.output.join("\n")
     }

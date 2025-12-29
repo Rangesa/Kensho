@@ -1,24 +1,21 @@
-/// Non-Zero Mask解析システム
+/// Non-zero mask analysis for P-code optimization
 ///
-/// Ghidraのcoreactionに基づく実装
-/// 各Varnodeで「1になりうるビット」を追跡し、最適化の基盤とする
-///
-/// 例：
-/// - 定数0x0F: NZMask = 0x0F (下位4ビットのみ1になりうる)
+/// NZMask tracks which bits in a Varnode can potentially be non-zero.
+/// This enables optimizations like:
 /// - V & 0xFF: NZMask = min(nzmask(V), 0xFF)
 /// - V | W: NZMask = nzmask(V) | nzmask(W)
 
 use crate::decompiler_prototype::pcode::{OpCode, Varnode, PcodeOp, AddressSpace};
 use std::collections::HashMap;
 
-/// Varnodeごとの非ゼロマスク情報
+/// Analyzer for non-zero mask computation
 #[derive(Debug, Clone)]
 pub struct NZMaskAnalyzer {
-    /// VarnodeのハッシュキーからNZMaskへのマッピング
+    /// Stores computed masks for each varnode
     masks: HashMap<VarnodeKey, u64>,
 }
 
-/// Varnodeを一意に識別するキー
+/// Key for identifying varnodes in the mask map
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct VarnodeKey {
     space: AddressSpace,
@@ -37,15 +34,14 @@ impl From<&Varnode> for VarnodeKey {
 }
 
 impl NZMaskAnalyzer {
-    /// 新しいNZMask解析器を作成
+    /// Create a new NZMask analyzer
     pub fn new() -> Self {
         Self {
             masks: HashMap::new(),
         }
     }
 
-    /// 指定されたサイズの全ビットマスクを計算
-    #[inline]
+    /// Calculate the full mask for a given size (all 1s for size bytes)
     fn calc_mask(size: usize) -> u64 {
         if size >= 8 {
             u64::MAX
@@ -54,39 +50,35 @@ impl NZMaskAnalyzer {
         }
     }
 
-    /// VarnodeのNZMaskを取得（未計算の場合は保守的見積もり）
+    /// Get the non-zero mask for a varnode
     pub fn get_nzmask(&self, vn: &Varnode) -> u64 {
         let key = VarnodeKey::from(vn);
         self.masks.get(&key).copied().unwrap_or_else(|| {
-            // 定数の場合は値そのもの
             if vn.space == AddressSpace::Const {
                 vn.offset & Self::calc_mask(vn.size)
             } else {
-                // デフォルトは全ビット有効（保守的）
                 Self::calc_mask(vn.size)
             }
         })
     }
 
-    /// VarnodeのNZMaskを設定
+    /// Set the non-zero mask for a varnode
     pub fn set_nzmask(&mut self, vn: &Varnode, mask: u64) {
         let key = VarnodeKey::from(vn);
         let bounded_mask = mask & Self::calc_mask(vn.size);
         self.masks.insert(key, bounded_mask);
     }
 
-    /// P-code操作からNZMaskを計算
+    /// Compute the NZMask for a P-code operation's output
     pub fn compute_op_nzmask(&mut self, op: &PcodeOp) -> Option<u64> {
         use OpCode::*;
 
         match op.opcode {
-            // 定数: 値そのもの
             Copy => {
                 let input_mask = self.get_nzmask(&op.inputs[0]);
                 Some(input_mask)
             }
 
-            // ビット演算: AND/OR/XOR
             IntAnd => {
                 let mask1 = self.get_nzmask(&op.inputs[0]);
                 let mask2 = self.get_nzmask(&op.inputs[1]);
@@ -104,10 +96,10 @@ impl NZMaskAnalyzer {
             }
             IntNegate => {
                 let mask = self.get_nzmask(&op.inputs[0]);
-                Some(mask) // ~V のマスクはVと同じ
+                let size = op.output.as_ref().map(|v| v.size).unwrap_or(8);
+                Some(Self::calc_mask(size))
             }
 
-            // シフト演算
             IntLeft => {
                 if op.inputs[1].space == AddressSpace::Const {
                     let mask = self.get_nzmask(&op.inputs[0]);
@@ -115,7 +107,6 @@ impl NZMaskAnalyzer {
                     let size = op.output.as_ref().map(|v| v.size).unwrap_or(8);
                     Some((mask << shift) & Self::calc_mask(size))
                 } else {
-                    // シフト量が不定の場合は保守的
                     None
                 }
             }
@@ -129,27 +120,23 @@ impl NZMaskAnalyzer {
                 }
             }
 
-            // 拡張演算
             IntZExt => {
                 let mask = self.get_nzmask(&op.inputs[0]);
-                Some(mask) // ゼロ拡張はマスクを保持
+                Some(mask)
             }
             IntSExt => {
-                // 符号拡張: 入力の最上位ビットが1なら上位ビットも1
                 let input_mask = self.get_nzmask(&op.inputs[0]);
                 let input_size = op.inputs[0].size;
                 let output_size = op.output.as_ref().map(|v| v.size).unwrap_or(8);
 
                 let sign_bit = 1u64 << (input_size * 8 - 1);
                 if (input_mask & sign_bit) != 0 {
-                    // 符号ビットが立ちうる場合は上位も1になりうる
                     Some(Self::calc_mask(output_size))
                 } else {
                     Some(input_mask)
                 }
             }
 
-            // 部分抽出
             SubPiece => {
                 if op.inputs.len() >= 2 && op.inputs[1].space == AddressSpace::Const {
                     let mask = self.get_nzmask(&op.inputs[0]);
@@ -163,38 +150,34 @@ impl NZMaskAnalyzer {
                 }
             }
 
-            // 加算/減算: 保守的見積もり（全ビット有効の可能性）
             IntAdd | IntSub => {
                 let size = op.output.as_ref().map(|v| v.size).unwrap_or(8);
                 Some(Self::calc_mask(size))
             }
 
-            // 乗算: より保守的
             IntMult => {
                 let size = op.output.as_ref().map(|v| v.size).unwrap_or(8);
                 Some(Self::calc_mask(size))
             }
 
-            // 比較演算: 結果は0または1
             IntEqual | IntNotEqual | IntLess | IntLessEqual | IntSLess | IntSLessEqual => {
                 Some(1)
             }
 
-            // ブール演算: 結果は0または1
             BoolNegate | BoolAnd | BoolOr | BoolXor => {
                 Some(1)
             }
 
-            // その他: 保守的見積もり
             _ => None,
         }
     }
 
-    /// P-code操作列を解析してNZMaskを計算
+    /// Analyze all operations and compute their NZMasks
     pub fn analyze_ops(&mut self, ops: &[PcodeOp]) {
-        // 複数回パスして収束させる（最大5回）
-        for _iteration in 0..5 {
-            let mut changed = false;
+        let mut changed = true;
+
+        while changed {
+            changed = false;
 
             for op in ops {
                 if let Some(output) = &op.output {
@@ -207,26 +190,20 @@ impl NZMaskAnalyzer {
                     }
                 }
             }
-
-            if !changed {
-                break; // 収束した
-            }
         }
     }
 
-    /// Consume Mask: Varnodeの使用箇所で実際に参照されるビット
+    /// Compute which bits of a varnode are consumed by operations
     ///
-    /// 例: (V & 0xFF) の場合、Vのconsume maskは0xFF
+    /// This is used for dead code elimination
     pub fn compute_consume_mask(&self, vn: &Varnode, ops: &[PcodeOp]) -> u64 {
         let mut consume = 0u64;
 
         for op in ops {
-            // このVarnodeを入力として使う操作を検索
             for (idx, input) in op.inputs.iter().enumerate() {
                 if input == vn {
                     match op.opcode {
                         OpCode::IntAnd if idx == 0 && op.inputs.len() > 1 => {
-                            // V & const の場合、constのビットだけが消費される
                             if op.inputs[1].space == AddressSpace::Const {
                                 consume |= op.inputs[1].offset;
                             } else {
@@ -234,7 +211,6 @@ impl NZMaskAnalyzer {
                             }
                         }
                         OpCode::IntOr if idx == 0 && op.inputs.len() > 1 => {
-                            // V | const の場合、constで立っていないビットが消費される
                             if op.inputs[1].space == AddressSpace::Const {
                                 consume |= !op.inputs[1].offset & Self::calc_mask(vn.size);
                             } else {
@@ -242,8 +218,7 @@ impl NZMaskAnalyzer {
                             }
                         }
                         OpCode::SubPiece if idx == 0 => {
-                            // SubPiece: 切り出される範囲のビットが消費される
-                            if op.inputs.len() > 1 && op.inputs[1].space == AddressSpace::Const {
+                            if op.inputs.len() >= 2 && op.inputs[1].space == AddressSpace::Const {
                                 let offset = op.inputs[1].offset as usize;
                                 let size = op.output.as_ref().map(|v| v.size).unwrap_or(4);
                                 let mask = Self::calc_mask(size) << (offset * 8);
@@ -253,7 +228,6 @@ impl NZMaskAnalyzer {
                             }
                         }
                         _ => {
-                            // デフォルトは全ビット消費
                             consume = Self::calc_mask(vn.size);
                         }
                     }
@@ -264,7 +238,7 @@ impl NZMaskAnalyzer {
         consume
     }
 
-    /// 統計情報を取得
+    /// Get statistics about the computed masks
     pub fn stats(&self) -> NZMaskStats {
         let mut zero_count = 0;
         let mut partial_count = 0;
@@ -296,13 +270,13 @@ impl Default for NZMaskAnalyzer {
     }
 }
 
-/// NZMask解析の統計情報
+/// Statistics about NZMask analysis results
 #[derive(Debug, Clone)]
 pub struct NZMaskStats {
     pub total: usize,
-    pub zero_count: usize,     // マスクが0（常に0）
-    pub partial_count: usize,  // 部分的なマスク
-    pub full_count: usize,     // 全ビット有効
+    pub zero_count: usize,
+    pub partial_count: usize,
+    pub full_count: usize,
 }
 
 #[cfg(test)]

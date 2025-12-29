@@ -1,4 +1,4 @@
-use anyhow::Result;
+﻿use anyhow::Result;
 use std::collections::{HashMap, HashSet};
 use crate::disassembler::{Disassembler, Instruction};
 
@@ -13,7 +13,7 @@ impl Decompiler {
         })
     }
 
-    /// 関数をC疑似コードにデコンパイル
+    /// 関数を擬似コードにデコンパイル
     pub fn decompile(&self, function_identifier: &str) -> Result<String> {
         // 関数アドレスの解析（アドレス or 関数名）
         let address = if function_identifier.starts_with("0x") {
@@ -33,7 +33,7 @@ impl Decompiler {
         // 制御フロー解析
         let cfg = self.build_control_flow_graph(&instructions, &branches);
 
-        // C疑似コード生成
+        // 擬似コード生成
         let pseudo_code = self.generate_pseudo_code(&instructions, &cfg);
 
         let mut output = String::new();
@@ -74,7 +74,7 @@ impl Decompiler {
         for (i, insn) in instructions.iter().enumerate() {
             if leaders.contains(&insn.address) {
                 if let Some(start) = current_block_start {
-                    // 前のブロックを完成させる
+                    // 前のブロックを完了させる
                     cfg.add_block(start, instructions[i - 1].address);
                 }
                 current_block_start = Some(insn.address);
@@ -91,7 +91,7 @@ impl Decompiler {
         cfg
     }
 
-    /// C疑似コード生成
+    /// 擬似コード生成
     fn generate_pseudo_code(&self, instructions: &[Instruction], cfg: &ControlFlowGraph) -> String {
         let mut code = String::new();
         
@@ -103,7 +103,7 @@ impl Decompiler {
         code.push_str("    uint64_t rax, rbx, rcx, rdx, rsi, rdi, rsp, rbp;\n");
         code.push_str("    uint32_t eax, ebx, ecx, edx;\n\n");
 
-        // 命令を疑似コードに変換
+        // 命令を擬似コードに変換
         let mut indent = 1;
         let mut prev_was_conditional = false;
 
@@ -186,7 +186,7 @@ impl Decompiler {
                 }
             }
 
-            // 条件分岐の終了を検出（簡易版）
+            // 条件分岐の終了を検知（簡易版）
             if prev_was_conditional && !insn.mnemonic.starts_with('j') {
                 indent = indent.saturating_sub(1);
                 let spaces = "    ".repeat(indent);

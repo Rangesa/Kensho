@@ -1,10 +1,10 @@
-use anyhow::{Context, Result};
+﻿use anyhow::{Context, Result};
 use goblin::{Object, pe::PE, elf::Elf, mach::Mach};
 use std::fs;
 use std::path::Path;
 
 pub struct BinaryAnalyzer {
-    // 将来的にキャッシュ機構などを追加
+    // 蟆・擂逧・↓繧ｭ繝｣繝・す繝･讖滓ｧ九↑縺ｩ繧定ｿｽ蜉
 }
 
 impl BinaryAnalyzer {
@@ -12,8 +12,7 @@ impl BinaryAnalyzer {
         Self {}
     }
 
-    /// バイナリファイルの基本情報を解析
-    pub async fn analyze_binary(&self, path: &str) -> Result<String> {
+    /// 繝舌う繝翫Μ繝輔ぃ繧､繝ｫ縺ｮ蝓ｺ譛ｬ諠・ｱ繧定ｧ｣譫・    pub async fn analyze_binary(&self, path: &str) -> Result<String> {
         let path = Path::new(path);
         let buffer = fs::read(path)
             .with_context(|| format!("Failed to read binary: {}", path.display()))?;
@@ -51,7 +50,7 @@ impl BinaryAnalyzer {
         
         output.push_str("Format: ELF (Executable and Linkable Format)\n");
         
-        // アーキテクチャ
+        // 繧｢繝ｼ繧ｭ繝・け繝√Ε
         let arch = match elf.header.e_machine {
             0x03 => "x86 (32-bit)",
             0x3E => "x86-64 (64-bit)",
@@ -63,19 +62,16 @@ impl BinaryAnalyzer {
         };
         output.push_str(&format!("Architecture: {} (0x{:x})\n", arch, elf.header.e_machine));
 
-        // エンディアン
+        // 繧ｨ繝ｳ繝・ぅ繧｢繝ｳ
         let endian = if elf.little_endian { "Little Endian" } else { "Big Endian" };
         output.push_str(&format!("Endianness: {}\n", endian));
 
-        // ビット幅
-        let bits = if elf.is_64 { "64-bit" } else { "32-bit" };
+        // 繝薙ャ繝亥ｹ・        let bits = if elf.is_64 { "64-bit" } else { "32-bit" };
         output.push_str(&format!("Bits: {}\n", bits));
 
-        // エントリポイント
-        output.push_str(&format!("Entry Point: 0x{:x}\n", elf.header.e_entry));
+        // 繧ｨ繝ｳ繝医Μ繝昴う繝ｳ繝・        output.push_str(&format!("Entry Point: 0x{:x}\n", elf.header.e_entry));
 
-        // タイプ
-        let etype = match elf.header.e_type {
+        // 繧ｿ繧､繝・        let etype = match elf.header.e_type {
             1 => "Relocatable",
             2 => "Executable",
             3 => "Shared Object",
@@ -84,7 +80,7 @@ impl BinaryAnalyzer {
         };
         output.push_str(&format!("Type: {}\n", etype));
 
-        // セクション数
+        // 繧ｻ繧ｯ繧ｷ繝ｧ繝ｳ謨ｰ
         output.push_str(&format!("\nSections: {}\n", elf.section_headers.len()));
         for (i, section) in elf.section_headers.iter().take(10).enumerate() {
             if let Some(name) = elf.shdr_strtab.get_at(section.sh_name) {
@@ -95,7 +91,7 @@ impl BinaryAnalyzer {
             }
         }
 
-        // シンボル
+        // 繧ｷ繝ｳ繝懊Ν
         output.push_str(&format!("\nSymbols: {}\n", elf.syms.len()));
         for (i, sym) in elf.syms.iter().take(10).enumerate() {
             if let Some(name) = elf.strtab.get_at(sym.st_name) {
@@ -116,7 +112,7 @@ impl BinaryAnalyzer {
         
         output.push_str("Format: PE (Portable Executable)\n");
 
-        // アーキテクチャ
+        // 繧｢繝ｼ繧ｭ繝・け繝√Ε
         let arch = match pe.header.coff_header.machine {
             0x14c => "x86 (32-bit)",
             0x8664 => "x86-64 (64-bit)",
@@ -126,15 +122,14 @@ impl BinaryAnalyzer {
         };
         output.push_str(&format!("Architecture: {} (0x{:x})\n", arch, pe.header.coff_header.machine));
 
-        // エントリポイント
-        if let Some(optional_header) = &pe.header.optional_header {
+        // 繧ｨ繝ｳ繝医Μ繝昴う繝ｳ繝・        if let Some(optional_header) = &pe.header.optional_header {
             let entry = optional_header.standard_fields.address_of_entry_point;
             let image_base = optional_header.windows_fields.image_base;
             output.push_str(&format!("Entry Point: 0x{:x}\n", entry));
             output.push_str(&format!("Image Base: 0x{:x}\n", image_base));
         }
 
-        // セクション
+        // 繧ｻ繧ｯ繧ｷ繝ｧ繝ｳ
         output.push_str(&format!("\nSections: {}\n", pe.sections.len()));
         for (i, section) in pe.sections.iter().enumerate() {
             let name = String::from_utf8_lossy(&section.name);
@@ -147,14 +142,12 @@ impl BinaryAnalyzer {
             ));
         }
 
-        // インポート
-        output.push_str(&format!("\nImports: {}\n", pe.imports.len()));
+        // 繧､繝ｳ繝昴・繝・        output.push_str(&format!("\nImports: {}\n", pe.imports.len()));
         for (i, import) in pe.imports.iter().take(10).enumerate() {
             output.push_str(&format!("  [{}] {} ({})\n", i, import.name, import.dll));
         }
 
-        // エクスポート
-        if let Some(exports) = &pe.exports {
+        // 繧ｨ繧ｯ繧ｹ繝昴・繝・        if let Some(exports) = &pe.exports {
             output.push_str(&format!("\nExports: {}\n", exports.len()));
             for (i, export) in exports.iter().take(10).enumerate() {
                 if let Some(name) = &export.name {
@@ -173,7 +166,7 @@ impl BinaryAnalyzer {
 
         match mach {
             Mach::Binary(macho) => {
-                // アーキテクチャ
+                // 繧｢繝ｼ繧ｭ繝・け繝√Ε
                 let arch = match macho.header.cputype {
                     0x7 => "x86 (32-bit)",
                     0x1000007 => "x86-64 (64-bit)",
@@ -183,13 +176,11 @@ impl BinaryAnalyzer {
                 };
                 output.push_str(&format!("Architecture: {} (0x{:x})\n", arch, macho.header.cputype));
 
-                // エントリポイント
-                if let Some(entry_point) = macho.entry {
+                // 繧ｨ繝ｳ繝医Μ繝昴う繝ｳ繝・                if let Some(entry_point) = macho.entry {
                     output.push_str(&format!("Entry Point: 0x{:x}\n", entry_point));
                 }
 
-                // セグメント
-                output.push_str(&format!("\nSegments: {}\n", macho.segments.len()));
+                // 繧ｻ繧ｰ繝｡繝ｳ繝・                output.push_str(&format!("\nSegments: {}\n", macho.segments.len()));
                 for (i, segment) in macho.segments.iter().take(10).enumerate() {
                     if let Ok(name) = segment.name() {
                         output.push_str(&format!(
@@ -207,8 +198,7 @@ impl BinaryAnalyzer {
         Ok(output)
     }
 
-    /// 逆アセンブル実行
-    pub async fn disassemble(&self, path: &str, address: &str, count: usize) -> Result<String> {
+    /// 騾・い繧ｻ繝ｳ繝悶Ν螳溯｡・    pub async fn disassemble(&self, path: &str, address: &str, count: usize) -> Result<String> {
         use crate::disassembler::Disassembler;
         
         let disasm = Disassembler::new(path)?;
@@ -221,7 +211,7 @@ impl BinaryAnalyzer {
         disasm.disassemble(addr, count)
     }
 
-    /// 関数検出
+    /// 髢｢謨ｰ讀懷・
     pub async fn find_functions(&self, path: &str) -> Result<String> {
         let path = Path::new(path);
         let buffer = fs::read(path)?;
@@ -265,7 +255,7 @@ impl BinaryAnalyzer {
         Ok(output)
     }
 
-    /// 簡易デコンパイル
+    /// 邁｡譏薙ョ繧ｳ繝ｳ繝代う繝ｫ
     pub async fn decompile_function(&self, path: &str, function_name: &str) -> Result<String> {
         use crate::decompiler::Decompiler;
         
@@ -273,7 +263,7 @@ impl BinaryAnalyzer {
         decompiler.decompile(function_name)
     }
 
-    /// 文字列抽出
+    /// 譁・ｭ怜・謚ｽ蜃ｺ
     pub async fn find_strings(&self, path: &str, min_length: usize) -> Result<String> {
         let buffer = fs::read(path)?;
         let mut output = String::new();
@@ -300,8 +290,7 @@ impl BinaryAnalyzer {
         Ok(output)
     }
 
-    /// インポート解析
-    pub async fn analyze_imports(&self, path: &str) -> Result<String> {
+    /// 繧､繝ｳ繝昴・繝郁ｧ｣譫・    pub async fn analyze_imports(&self, path: &str) -> Result<String> {
         let buffer = fs::read(path)?;
         let object = Object::parse(&buffer)?;
 

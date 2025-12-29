@@ -1,30 +1,27 @@
-/// Phase 8-9統合テスト
-/// 変数名復元、高度な最適化、C疑似コード生成のフルテスト
-
+﻿/// Phase 8-9邨ｱ蜷医ユ繧ｹ繝・/// 螟画焚蜷榊ｾｩ蜈・・ｫ伜ｺｦ縺ｪ譛驕ｩ蛹悶，逍台ｼｼ繧ｳ繝ｼ繝臥函謌舌・繝輔Ν繝・せ繝・
 use anyhow::Result;
-use ghidra_mcp::decompiler_prototype::{
+use kensho_mcp::decompiler_prototype::{
     CPrinter, CapstoneTranslator, Optimizer, SymbolTable, TypeInference,
 };
 use std::fs;
 use std::time::Instant;
 
 fn main() -> Result<()> {
-    println!("🚀 Phase 8-9 Integration Test");
+    println!("噫 Phase 8-9 Integration Test");
     println!("{}", "=".repeat(80));
 
     let binary_path = r"C:\Users\asdas\AppData\Local\WarThunder\win64\aces.exe";
     let function_address = 0x140001010u64; // dgs_init_argv_exported
 
-    println!("\n📁 Binary: {}", binary_path);
-    println!("🎯 Function: 0x{:X}", function_address);
+    println!("\n刀 Binary: {}", binary_path);
+    println!("識 Function: 0x{:X}", function_address);
 
-    // バイナリを読み込み
-    println!("\n📖 Loading binary...");
+    // 繝舌う繝翫Μ繧定ｪｭ縺ｿ霎ｼ縺ｿ
+    println!("\n当 Loading binary...");
     let binary_data = fs::read(binary_path)?;
     println!("   File size: {} MB", binary_data.len() / (1024 * 1024));
 
-    // Phase 1: シンボル復元テスト
-    println!("\n🔍 Phase 1: Symbol Recovery");
+    // Phase 1: 繧ｷ繝ｳ繝懊Ν蠕ｩ蜈・ユ繧ｹ繝・    println!("\n剥 Phase 1: Symbol Recovery");
     println!("{}", "-".repeat(80));
 
     let start = Instant::now();
@@ -32,7 +29,7 @@ fn main() -> Result<()> {
     let symbol_count = symbol_table.load_from_pe(&binary_data)?;
     let elapsed = start.elapsed();
 
-    println!("   ✅ Loaded {} symbols in {:.2?}", symbol_count, elapsed);
+    println!("   笨・Loaded {} symbols in {:.2?}", symbol_count, elapsed);
 
     if symbol_count > 0 {
         println!("\n   First 10 symbols:");
@@ -48,17 +45,15 @@ fn main() -> Result<()> {
         }
     }
 
-    // 対象関数のシンボルを確認
-    if let Some(symbol) = symbol_table.get_symbol(function_address) {
-        println!("\n   🎯 Target function symbol found:");
+    // 蟇ｾ雎｡髢｢謨ｰ縺ｮ繧ｷ繝ｳ繝懊Ν繧堤｢ｺ隱・    if let Some(symbol) = symbol_table.get_symbol(function_address) {
+        println!("\n   識 Target function symbol found:");
         println!("      Name: {}", symbol.name);
         println!("      Address: 0x{:X}", symbol.address);
     } else {
-        println!("\n   ⚠️  No symbol found for target function");
+        println!("\n   笞・・ No symbol found for target function");
     }
 
-    // Phase 2: P-code生成と最適化
-    println!("\n⚙️  Phase 2: P-code Generation & Optimization");
+    // Phase 2: P-code逕滓・縺ｨ譛驕ｩ蛹・    println!("\n笞呻ｸ・ Phase 2: P-code Generation & Optimization");
     println!("{}", "-".repeat(80));
 
     let file_offset = 0x1010usize;
@@ -78,7 +73,7 @@ fn main() -> Result<()> {
     let translate_time = start.elapsed();
 
     println!(
-        "   ✅ Generated {} P-code operations in {:.2?}",
+        "   笨・Generated {} P-code operations in {:.2?}",
         pcodes.len(),
         translate_time
     );
@@ -89,8 +84,8 @@ fn main() -> Result<()> {
     let opt_stats = optimizer.optimize(&mut pcodes);
     let optimize_time = start.elapsed();
 
-    println!("   ✅ Optimization complete in {:.2?}", optimize_time);
-    println!("   📊 Optimization Statistics:");
+    println!("   笨・Optimization complete in {:.2?}", optimize_time);
+    println!("   投 Optimization Statistics:");
     println!("      Iterations: {}", opt_stats.iterations);
     println!("      Total applications: {}", opt_stats.total_applications);
 
@@ -104,8 +99,7 @@ fn main() -> Result<()> {
         }
     }
 
-    // Phase 3: C疑似コード生成
-    println!("\n💻 Phase 3: C Pseudo-code Generation");
+    // Phase 3: C逍台ｼｼ繧ｳ繝ｼ繝臥函謌・    println!("\n捗 Phase 3: C Pseudo-code Generation");
     println!("{}", "-".repeat(80));
 
     let type_info = TypeInference::new();
@@ -117,12 +111,12 @@ fn main() -> Result<()> {
     let print_time = start.elapsed();
 
     println!(
-        "   ✅ Generated C code ({} lines) in {:.2?}",
+        "   笨・Generated C code ({} lines) in {:.2?}",
         c_code.lines().count(),
         print_time
     );
 
-    println!("\n   📝 Generated C Code (first 30 lines):");
+    println!("\n   統 Generated C Code (first 30 lines):");
     println!("{}", "-".repeat(80));
     for (i, line) in c_code.lines().take(30).enumerate() {
         println!("{:4} | {}", i + 1, line);
@@ -131,10 +125,10 @@ fn main() -> Result<()> {
         println!("   ... ({} more lines)", c_code.lines().count() - 30);
     }
 
-    // サマリー
+    // 繧ｵ繝槭Μ繝ｼ
     println!("\n{}", "=".repeat(80));
-    println!("✅ Phase 8-9 Integration Test Complete!");
-    println!("\n📈 Performance Summary:");
+    println!("笨・Phase 8-9 Integration Test Complete!");
+    println!("\n嶋 Performance Summary:");
     println!("   Symbol loading: {:.2?}", elapsed);
     println!("   P-code translation: {:.2?}", translate_time);
     println!("   Optimization: {:.2?}", optimize_time);
@@ -144,13 +138,13 @@ fn main() -> Result<()> {
         elapsed + translate_time + optimize_time + print_time
     );
 
-    println!("\n🎯 New Capabilities:");
-    println!("   ✓ Symbol recovery from PE export table");
-    println!("   ✓ Advanced optimization rules (12 rules)");
-    println!("   ✓ Constant folding (const op const => const)");
-    println!("   ✓ Zero-operation simplification (V + 0 => V)");
-    println!("   ✓ C pseudo-code generation with type inference");
-    println!("   ✓ Variable name mapping (registers, memory, temporaries)");
+    println!("\n識 New Capabilities:");
+    println!("   笨・Symbol recovery from PE export table");
+    println!("   笨・Advanced optimization rules (12 rules)");
+    println!("   笨・Constant folding (const op const => const)");
+    println!("   笨・Zero-operation simplification (V + 0 => V)");
+    println!("   笨・C pseudo-code generation with type inference");
+    println!("   笨・Variable name mapping (registers, memory, temporaries)");
 
     Ok(())
 }

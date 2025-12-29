@@ -1,51 +1,49 @@
-/// ジャンプテーブル検出とSwitch文復元
-///
-/// Ghidraのjumptable.ccに基づく実装
-/// 間接ジャンプ（jmp [rip+rax*8]等）からswitch-case構造を復元
+/// Jump table detection and switch statement recovery
+/// Identifies indirect jumps and converts them to readable switch statements
 
 use crate::decompiler_prototype::pcode::{AddressSpace, OpCode, PcodeOp, Varnode};
 use crate::decompiler_prototype::dataflow::DefUseChain;
 use std::collections::{HashMap, HashSet};
 use anyhow::Result;
 
-/// ジャンプテーブル情報
+/// Represents a jump table structure
 #[derive(Debug, Clone)]
 pub struct JumpTable {
-    /// ジャンプテーブルのアドレス
+    /// Base address of the jump table
     pub table_address: u64,
-    /// エントリ数
+    /// Number of entries in the table
     pub num_entries: usize,
-    /// エントリサイズ（バイト）
+    /// Size of each entry (4 or 8 bytes)
     pub entry_size: usize,
-    /// ジャンプ先アドレスのリスト
+    /// Target addresses from the table
     pub destinations: Vec<u64>,
-    /// スイッチ変数（インデックス）
+    /// Variable used for switching
     pub switch_var: Varnode,
 }
 
-/// Switch-Case構造
+/// Represents a switch statement
 #[derive(Debug, Clone)]
 pub struct SwitchStatement {
-    /// switch文のアドレス
+    /// Address of the switch statement
     pub address: u64,
-    /// スイッチ変数
+    /// Variable being switched on
     pub switch_var: Varnode,
-    /// case分岐のリスト
+    /// Case branches
     pub cases: Vec<CaseBranch>,
-    /// defaultケース（存在する場合）
+    /// Default case target (if any)
     pub default_case: Option<u64>,
 }
 
-/// Caseラベルと分岐先
+/// Represents a single case in a switch statement
 #[derive(Debug, Clone)]
 pub struct CaseBranch {
-    /// caseラベルの値
+    /// Case label value
     pub label: u64,
-    /// 分岐先アドレス
+    /// Target address for this case
     pub target: u64,
 }
 
-/// ジャンプテーブル検出器
+/// Jump table detector
 pub struct JumpTableDetector {
     du_chain: DefUseChain,
 }
@@ -55,12 +53,12 @@ impl JumpTableDetector {
         Self { du_chain }
     }
 
-    /// P-code操作列からジャンプテーブルを検出
+    /// Detect jump tables in P-code operations
     pub fn detect(&self, ops: &[PcodeOp]) -> Vec<JumpTable> {
         let mut tables = Vec::new();
 
         for op in ops {
-            // 間接ジャンプ命令を探す
+            // Look for indirect branch operations
             if op.opcode == OpCode::BranchInd {
                 if let Some(table) = self.analyze_indirect_branch(op, ops) {
                     tables.push(table);
@@ -71,17 +69,17 @@ impl JumpTableDetector {
         tables
     }
 
-    /// 間接ジャンプ命令を解析
+    /// Analyze indirect branch to detect jump table
     fn analyze_indirect_branch(&self, op: &PcodeOp, _ops: &[PcodeOp]) -> Option<JumpTable> {
         if op.inputs.is_empty() {
             return None;
         }
 
-        // ジャンプ先アドレスを計算するVarnodeを取得
+        // Get varnode that computes jump target address
         let target_vn = &op.inputs[0];
 
-        // Load操作からジャンプテーブルを検出
-        // パターン: target = Load(table_base + index * entry_size)
+        // Detect jump table from Load operation
+        // Pattern: target = Load(table_base + index * entry_size)
         if let Some(load_op) = self.du_chain.get_def(target_vn) {
             if load_op.opcode == OpCode::Load && load_op.inputs.len() >= 2 {
                 return self.analyze_load_pattern(&load_op.inputs[1], op.address);
@@ -91,13 +89,12 @@ impl JumpTableDetector {
         None
     }
 
-    /// Load操作のアドレス計算パターンを解析
-    ///
-    /// パターン例:
+    /// Analyze address computation pattern for jump table
+    /// Common patterns:
     /// - [rip + index * 8]
     /// - [table_base + index * 4]
     fn analyze_load_pattern(&self, addr_vn: &Varnode, _switch_addr: u64) -> Option<JumpTable> {
-        // アドレス計算の定義を取得
+        // Get definition of address computation
         let addr_op = self.du_chain.get_def(addr_vn)?;
 
         // PtrAdd: base + offset
@@ -105,34 +102,34 @@ impl JumpTableDetector {
             let base = &addr_op.inputs[0];
             let offset = &addr_op.inputs[1];
 
-            // 定数ベースアドレス
+            // Constant base address
             if base.space == AddressSpace::Const {
                 let table_address = base.offset;
 
-                // オフセットが乗算（index * entry_size）の場合
+                // If offset is multiplication (index * entry_size)
                 if let Some(mult_op) = self.du_chain.get_def(offset) {
                     if mult_op.opcode == OpCode::IntMult && mult_op.inputs.len() >= 2 {
                         let switch_var = mult_op.inputs[0].clone();
                         let entry_size = if mult_op.inputs[1].space == AddressSpace::Const {
                             mult_op.inputs[1].offset as usize
                         } else {
-                            8 // デフォルト64bitポインタ
+                            8 // Default: 64bit pointer
                         };
 
-                        // 簡易版: エントリ数は推定（実際にはメモリ読み取りが必要）
-                        let num_entries = 10; // 暫定値
+                        // Simplified: number of entries is estimated (should read from memory)
+                        let num_entries = 10; // Placeholder value
 
                         return Some(JumpTable {
                             table_address,
                             num_entries,
                             entry_size,
-                            destinations: Vec::new(), // メモリ読み取りで埋める
+                            destinations: Vec::new(), // Fill by reading memory
                             switch_var,
                         });
                     }
                 }
 
-                // 直接オフセット（entry_size=1と仮定）
+                // Direct offset (assume entry_size=1)
                 return Some(JumpTable {
                     table_address,
                     num_entries: 10,
@@ -146,11 +143,11 @@ impl JumpTableDetector {
         None
     }
 
-    /// ジャンプテーブルからSwitch文を復元
-    pub fn recover_switch(&self, table: &JumpTable) -> SwitchStatement {
+    /// Convert jump table to switch statement
+    pub fn to_switch_statement(&self, table: &JumpTable) -> SwitchStatement {
         let mut cases = Vec::new();
 
-        // 各エントリをcaseラベルに変換
+        // Convert each entry to a case label
         for (label, &target) in table.destinations.iter().enumerate() {
             cases.push(CaseBranch {
                 label: label as u64,
@@ -167,7 +164,7 @@ impl JumpTableDetector {
     }
 }
 
-/// Switch文のC疑似コード生成
+/// Switch statement printer
 pub struct SwitchPrinter {
     indent_level: usize,
 }
@@ -177,24 +174,24 @@ impl SwitchPrinter {
         Self { indent_level: 0 }
     }
 
-    /// Switch文をC疑似コードに変換
+    /// Print switch statement as C-like code
     pub fn print(&mut self, switch: &SwitchStatement) -> String {
         let mut output = Vec::new();
         let indent = "  ".repeat(self.indent_level);
 
-        // switch文ヘッダー
+        // switch header
         output.push(format!(
             "{}switch (/* varnode at 0x{:x} */) {{",
             indent,
             switch.switch_var.offset
         ));
 
-        // 各caseラベル
+        // Each case label
         for case in &switch.cases {
             output.push(format!("{}  case {}: goto label_0x{:x};", indent, case.label, case.target));
         }
 
-        // defaultケース
+        // default case
         if let Some(default_addr) = switch.default_case {
             output.push(format!("{}  default: goto label_0x{:x};", indent, default_addr));
         }
@@ -211,9 +208,8 @@ impl Default for SwitchPrinter {
     }
 }
 
-/// ジャンプテーブルのメモリ読み取り
-///
-/// 実際のバイナリからジャンプテーブルの内容を読み取る
+/// Jump table loader
+/// Reads jump table entries from binary data
 pub struct JumpTableLoader {
     binary_data: Vec<u8>,
 }
@@ -223,9 +219,9 @@ impl JumpTableLoader {
         Self { binary_data }
     }
 
-    /// ジャンプテーブルのエントリを読み取り
+    /// Load jump table entries from binary
     pub fn load_entries(&self, table: &mut JumpTable, image_base: u64) -> Result<()> {
-        // RVAをファイルオフセットに変換（簡易版）
+        // Convert RVA to file offset (simplified)
         let file_offset = self.rva_to_offset(table.table_address, image_base)?;
 
         table.destinations.clear();
@@ -237,7 +233,7 @@ impl JumpTableLoader {
                 break;
             }
 
-            // エントリサイズに応じて読み取り
+            // Read according to entry size
             let entry_value = match table.entry_size {
                 4 => {
                     let bytes = &self.binary_data[entry_offset..entry_offset + 4];
@@ -259,9 +255,9 @@ impl JumpTableLoader {
         Ok(())
     }
 
-    /// RVAをファイルオフセットに変換
+    /// Convert RVA to file offset
     fn rva_to_offset(&self, rva: u64, image_base: u64) -> Result<usize> {
-        // 簡易変換: .textセクション仮定
+        // Simplified: assume .text section
         let text_rva_start = 0x1000u64;
         let text_file_offset = 0x400usize;
 

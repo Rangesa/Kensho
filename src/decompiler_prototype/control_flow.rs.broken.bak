@@ -1,0 +1,750 @@
+/// [Comment removed due to encoding issues]
+
+/// [Comment removed due to encoding issues]
+
+
+use super::cfg::*;
+use super::pcode::*;
+use std::collections::{HashMap, HashSet, VecDeque};
+
+/// [Comment removed due to encoding issues]
+
+pub enum ControlStructure {
+    /// [Comment removed due to encoding issues]
+
+    /// [Comment removed due to encoding issues]
+
+    IfThenElse {
+        condition_block: BlockId,
+        then_branch: Box<ControlStructure>,
+        else_branch: Option<Box<ControlStructure>>,
+    },
+    /// [Comment removed due to encoding issues]
+
+        condition_block: BlockId,
+        then_branch: Box<ControlStructure>,
+    },
+    /// [Comment removed due to encoding issues]
+
+    While {
+        condition_block: BlockId,
+        body: Box<ControlStructure>,
+    },
+    /// [Comment removed due to encoding issues]
+
+    DoWhile {
+        body: Box<ControlStructure>,
+        condition_block: BlockId,
+    },
+    /// [Comment removed due to encoding issues]
+
+        body: Box<ControlStructure>,
+    },
+    /// [Comment removed due to encoding issues]
+
+    Switch {
+        condition_block: BlockId,
+        cases: Vec<(Option<i64>, ControlStructure)>, // (case蛟､, 蜃ｦ逅・
+    },
+    /// [Comment removed due to encoding issues]
+
+    BasicBlock(BlockId),
+    /// [Comment removed due to encoding issues]
+
+    /// [Comment removed due to encoding issues]
+
+}
+
+/// [Comment removed due to encoding issues]
+
+#[derive(Debug, Clone)]
+pub struct LoopInfo {
+    /// [Comment removed due to encoding issues]
+
+    /// [Comment removed due to encoding issues]
+
+    /// [Comment removed due to encoding issues]
+
+    /// [Comment removed due to encoding issues]
+
+}
+
+/// [Comment removed due to encoding issues]
+
+pub enum LoopType {
+    /// [Comment removed due to encoding issues]
+
+    /// [Comment removed due to encoding issues]
+
+    /// [Comment removed due to encoding issues]
+
+}
+
+/// [Comment removed due to encoding issues]
+
+pub struct ControlFlowAnalyzer {
+    /// [Comment removed due to encoding issues]
+
+    dominators: HashMap<BlockId, BlockId>,
+    /// [Comment removed due to encoding issues]
+
+    loops: Vec<LoopInfo>,
+    /// [Comment removed due to encoding issues]
+
+    visited: HashSet<BlockId>,
+}
+
+impl ControlFlowAnalyzer {
+    /// [Comment removed due to encoding issues]
+
+    pub fn new() -> Self {
+        Self {
+            dominators: HashMap::new(),
+            loops: Vec::new(),
+            visited: HashSet::new(),
+        }
+    }
+
+    /// [Comment removed due to encoding issues]
+
+        &self.loops
+    }
+
+    /// [Comment removed due to encoding issues]
+
+    pub fn analyze(&mut self, cfg: &ControlFlowGraph) -> ControlStructure {
+        // 1. 謾ｯ驟肴惠繧定ｨ育ｮ・        self.compute_dominators(cfg);
+
+        // 2. 繝ｫ繝ｼ繝励ｒ讀懷・
+        self.detect_loops(cfg);
+
+        // 3. 蛻ｶ蠕｡讒矩繧呈ｧ狗ｯ・        self.build_control_structure(cfg, cfg.entry_block)
+    }
+
+    /// [Comment removed due to encoding issues]
+
+        let entry = cfg.entry_block;
+        let mut idom: HashMap<BlockId, Option<BlockId>> = HashMap::new();
+
+        // 蛻晄悄蛹・        for &block_id in cfg.blocks.keys() {
+            if block_id == entry {
+                idom.insert(block_id, None);
+            } else {
+                idom.insert(block_id, None);
+            }
+        }
+
+        // 騾・・繧ｹ繝医が繝ｼ繝繝ｼ
+        let rpo = self.reverse_postorder(cfg, entry);
+
+        // 蜿取據縺ｾ縺ｧ郢ｰ繧願ｿ斐＠
+        let mut changed = true;
+        while changed {
+            changed = false;
+
+            for &block_id in &rpo {
+                if block_id == entry {
+                    continue;
+                }
+
+                let block = &cfg.blocks[&block_id];
+                if block.predecessors.is_empty() {
+                    continue;
+                }
+
+                // 蜃ｦ逅・ｸ医∩縺ｮ蜈郁｡後ヶ繝ｭ繝・け縺九ｉ譁ｰ縺励＞謾ｯ驟崎・ｒ險育ｮ・                let mut new_idom: Option<BlockId> = None;
+                for &pred in &block.predecessors {
+                    if idom.get(&pred).and_then(|x| *x).is_some() || pred == entry {
+                        new_idom = Some(pred);
+                        break;
+                    }
+                }
+
+                if new_idom != idom[&block_id] {
+                    idom.insert(block_id, new_idom);
+                    changed = true;
+                }
+            }
+        }
+
+        // 邨先棡繧剃ｿ晏ｭ・        for (block_id, dom) in idom {
+            if let Some(dominator) = dom {
+                self.dominators.insert(block_id, dominator);
+            }
+        }
+    }
+
+    /// [Comment removed due to encoding issues]
+
+    fn reverse_postorder(&self, cfg: &ControlFlowGraph, entry: BlockId) -> Vec<BlockId> {
+        let mut visited = HashSet::new();
+        let mut postorder = Vec::new();
+
+        fn dfs(
+            cfg: &ControlFlowGraph,
+            block_id: BlockId,
+            visited: &mut HashSet<BlockId>,
+            postorder: &mut Vec<BlockId>,
+        ) {
+            if visited.contains(&block_id) {
+                return;
+            }
+            visited.insert(block_id);
+
+            if let Some(block) = cfg.blocks.get(&block_id) {
+                for &successor in &block.successors {
+                    dfs(cfg, successor, visited, postorder);
+                }
+            }
+
+            postorder.push(block_id);
+        }
+
+        dfs(cfg, entry, &mut visited, &mut postorder);
+        postorder.reverse();
+        postorder
+    }
+
+    /// [Comment removed due to encoding issues]
+
+    fn detect_loops(&mut self, cfg: &ControlFlowGraph) {
+        // 繝舌ャ繧ｯ繧ｨ繝・ず繧呈､懷・・亥ｾ檎ｶ壹ヶ繝ｭ繝・け縺梧髪驟崎・・蝣ｴ蜷茨ｼ・        let mut back_edges = Vec::new();
+
+        for (&block_id, block) in &cfg.blocks {
+            for &successor in &block.successors {
+                // successor縺恵lock_id繧呈髪驟阪☆繧句ｴ蜷医√％繧後・繝舌ャ繧ｯ繧ｨ繝・ず
+                if self.dominates(successor, block_id) {
+                    back_edges.push((block_id, successor));
+                }
+            }
+        }
+
+        // 蜷・ヰ繝・け繧ｨ繝・ず縺九ｉ繝ｫ繝ｼ繝励ｒ讒狗ｯ・        for (tail, header) in back_edges {
+            let body = self.find_loop_body(cfg, header, tail);
+            let loop_type = self.determine_loop_type(cfg, header, &body);
+
+            self.loops.push(LoopInfo {
+                header,
+                body,
+                back_edges: vec![(tail, header)],
+                loop_type,
+            });
+        }
+    }
+
+    /// [Comment removed due to encoding issues]
+
+    fn find_loop_body(&self, cfg: &ControlFlowGraph, header: BlockId, tail: BlockId) -> HashSet<BlockId> {
+        let mut body = HashSet::new();
+        body.insert(header);
+
+        if tail == header {
+            return body;
+        }
+
+        let mut worklist = VecDeque::new();
+        worklist.push_back(tail);
+        body.insert(tail);
+
+        while let Some(block_id) = worklist.pop_front() {
+            if let Some(block) = cfg.blocks.get(&block_id) {
+                for &pred in &block.predecessors {
+                    if !body.contains(&pred) && self.dominates(header, pred) {
+                        body.insert(pred);
+                        worklist.push_back(pred);
+                    }
+                }
+            }
+        }
+
+        body
+    }
+
+    /// [Comment removed due to encoding issues]
+
+        // 繝倥ャ繝繝ｼ繝悶Ο繝・け縺ｮ邨らｫｯ蜻ｽ莉､繧偵メ繧ｧ繝・け
+        if let Some(header_block) = cfg.blocks.get(&header) {
+            if let Some(last_op) = header_block.ops.last() {
+                match last_op.opcode {
+                    OpCode::CBranch => {
+                        // 譚｡莉ｶ蛻・ｲ舌′縺ゅｋ蝣ｴ蜷医・while繝ｫ繝ｼ繝・                        LoopType::While
+                    }
+                    OpCode::Branch => {
+                        // 辟｡譚｡莉ｶ蛻・ｲ舌・蝣ｴ蜷医・辟｡髯舌Ν繝ｼ繝励・蜿ｯ閭ｽ諤ｧ
+                        LoopType::Infinite
+                    }
+                    _ => {
+                        // 縺昴・莉悶・蝣ｴ蜷医・do-while縺ｨ蛻､螳・                        LoopType::DoWhile
+                    }
+                }
+            } else {
+                LoopType::While
+            }
+        } else {
+            LoopType::While
+        }
+    }
+
+    /// [Comment removed due to encoding issues]
+
+    fn dominates(&self, dominator: BlockId, block: BlockId) -> bool {
+        if dominator == block {
+            return true;
+        }
+
+        let mut current = block;
+        while let Some(&dom) = self.dominators.get(&current) {
+            if dom == dominator {
+                return true;
+            }
+            if dom == current {
+                break;
+            }
+            current = dom;
+        }
+
+        false
+    }
+
+    /// [Comment removed due to encoding issues]
+
+        if self.visited.contains(&block_id) {
+            return ControlStructure::BasicBlock(block_id);
+        }
+        self.visited.insert(block_id);
+
+        // 縺薙・繝悶Ο繝・け縺後Ν繝ｼ繝励・繝・ム繝ｼ縺狗｢ｺ隱・        if let Some(loop_info) = self.find_loop_by_header(block_id) {
+            return self.build_loop_structure(cfg, loop_info);
+        }
+
+        let block = match cfg.blocks.get(&block_id) {
+            Some(b) => b,
+            None => return ControlStructure::BasicBlock(block_id),
+        };
+
+        // 蠕檎ｶ壹ヶ繝ｭ繝・け謨ｰ縺ｧ蛻・ｲ・        match block.successors.len() {
+            0 => {
+                // 繝ｪ繧ｿ繝ｼ繝ｳ縺ｾ縺溘・邨らｫｯ
+                ControlStructure::BasicBlock(block_id)
+            }
+            1 => {
+                // 鬆・ｬ｡螳溯｡・                let next = block.successors[0];
+                let next_struct = self.build_control_structure(cfg, next);
+                ControlStructure::Sequence(vec![
+                    ControlStructure::BasicBlock(block_id),
+                    next_struct,
+                ])
+            }
+            2 => {
+                // if譁・∪縺溘・繝ｫ繝ｼ繝・                self.build_if_structure(cfg, block_id, &block.successors)
+            }
+            _ => {
+                // switch譁・・蜿ｯ閭ｽ諤ｧ
+                self.build_switch_structure(cfg, block_id, &block.successors)
+            }
+        }
+    }
+
+    /// [Comment removed due to encoding issues]
+
+        if successors.len() != 2 {
+            return ControlStructure::BasicBlock(condition_block);
+        }
+
+        let then_block = successors[0];
+        let else_block = successors[1];
+
+        // 蜷域ｵ∫せ繧呈爾縺・        let merge_point = self.find_merge_point(cfg, then_block, else_block);
+
+        let then_branch = Box::new(self.build_region(cfg, then_block, merge_point));
+
+        // else蛻・ｲ舌′遨ｺ縺ｧ縺ｪ縺・°繝√ぉ繝・け
+        if else_block == merge_point.unwrap_or(else_block) {
+            // else蛻・ｲ舌↑縺・            ControlStructure::IfThen {
+                condition_block,
+                then_branch,
+            }
+        } else {
+            let else_branch = Some(Box::new(self.build_region(cfg, else_block, merge_point)));
+            ControlStructure::IfThenElse {
+                condition_block,
+                then_branch,
+                else_branch,
+            }
+        }
+    }
+
+    /// [Comment removed due to encoding issues]
+
+        let mut cases = Vec::new();
+
+        for (i, &succ) in successors.iter().enumerate() {
+            let case_value = if i == successors.len() - 1 {
+                None // default case
+            } else {
+                Some(i as i64)
+            };
+
+            let case_struct = self.build_control_structure(cfg, succ);
+            cases.push((case_value, case_struct));
+        }
+
+        ControlStructure::Switch {
+            condition_block,
+            cases,
+        }
+    }
+
+    /// [Comment removed due to encoding issues]
+
+        let header = loop_info.header;
+        let body_blocks: Vec<BlockId> = loop_info.body.iter().copied().filter(|&b| b != header).collect();
+
+        // 繝ｫ繝ｼ繝玲悽菴薙ｒ讒狗ｯ・        let mut body_structures = Vec::new();
+        for &block_id in &body_blocks {
+            if !self.visited.contains(&block_id) {
+                let struct_node = self.build_control_structure(cfg, block_id);
+                body_structures.push(struct_node);
+            }
+        }
+
+        let body = if body_structures.is_empty() {
+            Box::new(ControlStructure::BasicBlock(header))
+        } else if body_structures.len() == 1 {
+            Box::new(body_structures.into_iter().next().unwrap())
+        } else {
+            Box::new(ControlStructure::Sequence(body_structures))
+        };
+
+        match loop_info.loop_type {
+            LoopType::While => ControlStructure::While {
+                condition_block: header,
+                body,
+            },
+            LoopType::DoWhile => ControlStructure::DoWhile {
+                body,
+                condition_block: header,
+            },
+            LoopType::Infinite => ControlStructure::InfiniteLoop { body },
+        }
+    }
+
+    /// [Comment removed due to encoding issues]
+
+        if Some(start) == end {
+            return ControlStructure::BasicBlock(start);
+        }
+
+        let mut current = start;
+        let mut sequence = Vec::new();
+
+        loop {
+            if Some(current) == end {
+                break;
+            }
+
+            sequence.push(ControlStructure::BasicBlock(current));
+
+            let block = match cfg.blocks.get(&current) {
+                Some(b) => b,
+                None => break,
+            };
+
+            if block.successors.is_empty() {
+                break;
+            }
+
+            if block.successors.len() == 1 {
+                current = block.successors[0];
+            } else {
+                // 蛻・ｲ舌′縺ゅｋ蝣ｴ蜷医・蜀榊ｸｰ逧・↓讒狗ｯ・                let branch_struct = self.build_control_structure(cfg, current);
+                sequence.push(branch_struct);
+                break;
+            }
+        }
+
+        if sequence.is_empty() {
+            ControlStructure::BasicBlock(start)
+        } else if sequence.len() == 1 {
+            sequence.into_iter().next().unwrap()
+        } else {
+            ControlStructure::Sequence(sequence)
+        }
+    }
+
+    /// [Comment removed due to encoding issues]
+
+    fn find_merge_point(&self, cfg: &ControlFlowGraph, branch1: BlockId, branch2: BlockId) -> Option<BlockId> {
+        let mut visited1 = HashSet::new();
+        let mut queue1 = VecDeque::new();
+        queue1.push_back(branch1);
+
+        // branch1縺九ｉ蛻ｰ驕泌庄閭ｽ縺ｪ縺吶∋縺ｦ縺ｮ繝悶Ο繝・け繧貞庶髮・        while let Some(block_id) = queue1.pop_front() {
+            if visited1.contains(&block_id) {
+                continue;
+            }
+            visited1.insert(block_id);
+
+            if let Some(block) = cfg.blocks.get(&block_id) {
+                for &succ in &block.successors {
+                    queue1.push_back(succ);
+                }
+            }
+        }
+
+        // branch2縺九ｉ蛻ｰ驕泌庄閭ｽ縺ｧ縲｜ranch1縺九ｉ繧ょ芦驕泌庄閭ｽ縺ｪ譛蛻昴・繝悶Ο繝・け繧呈爾縺・        let mut visited2 = HashSet::new();
+        let mut queue2 = VecDeque::new();
+        queue2.push_back(branch2);
+
+        while let Some(block_id) = queue2.pop_front() {
+            if visited2.contains(&block_id) {
+                continue;
+            }
+            visited2.insert(block_id);
+
+            if visited1.contains(&block_id) {
+                return Some(block_id);
+            }
+
+            if let Some(block) = cfg.blocks.get(&block_id) {
+                for &succ in &block.successors {
+                    queue2.push_back(succ);
+                }
+            }
+        }
+
+        None
+    }
+
+    /// [Comment removed due to encoding issues]
+
+    fn find_loop_by_header(&self, header: BlockId) -> Option<LoopInfo> {
+        self.loops.iter().find(|l| l.header == header).cloned()
+    }
+}
+
+impl Default for ControlFlowAnalyzer {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// [Comment removed due to encoding issues]
+
+    indent_level: usize,
+}
+
+impl ControlStructurePrinter {
+    pub fn new() -> Self {
+        Self { indent_level: 0 }
+    }
+
+    /// [Comment removed due to encoding issues]
+
+    pub fn print(&mut self, structure: &ControlStructure) -> String {
+        match structure {
+            ControlStructure::Sequence(seq) => {
+                let mut result = String::new();
+                for item in seq {
+                    result.push_str(&self.print(item));
+                }
+                result
+            }
+            ControlStructure::IfThenElse {
+                condition_block,
+                then_branch,
+                else_branch,
+            } => {
+                let indent = "  ".repeat(self.indent_level);
+                let mut result = format!("{}if (block_{}) {{\n", indent, condition_block);
+
+                self.indent_level += 1;
+                result.push_str(&self.print(then_branch));
+                self.indent_level -= 1;
+
+                if let Some(else_br) = else_branch {
+                    result.push_str(&format!("{}}} else {{\n", indent));
+                    self.indent_level += 1;
+                    result.push_str(&self.print(else_br));
+                    self.indent_level -= 1;
+                }
+
+                result.push_str(&format!("{}}}\n", indent));
+                result
+            }
+            ControlStructure::IfThen {
+                condition_block,
+                then_branch,
+            } => {
+                let indent = "  ".repeat(self.indent_level);
+                let mut result = format!("{}if (block_{}) {{\n", indent, condition_block);
+
+                self.indent_level += 1;
+                result.push_str(&self.print(then_branch));
+                self.indent_level -= 1;
+
+                result.push_str(&format!("{}}}\n", indent));
+                result
+            }
+            ControlStructure::While {
+                condition_block,
+                body,
+            } => {
+                let indent = "  ".repeat(self.indent_level);
+                let mut result = format!("{}while (block_{}) {{\n", indent, condition_block);
+
+                self.indent_level += 1;
+                result.push_str(&self.print(body));
+                self.indent_level -= 1;
+
+                result.push_str(&format!("{}}}\n", indent));
+                result
+            }
+            ControlStructure::DoWhile {
+                body,
+                condition_block,
+            } => {
+                let indent = "  ".repeat(self.indent_level);
+                let mut result = format!("{}do {{\n", indent);
+
+                self.indent_level += 1;
+                result.push_str(&self.print(body));
+                self.indent_level -= 1;
+
+                result.push_str(&format!("{}}} while (block_{});\n", indent, condition_block));
+                result
+            }
+            ControlStructure::InfiniteLoop { body } => {
+                let indent = "  ".repeat(self.indent_level);
+                let mut result = format!("{}loop {{\n", indent);
+
+                self.indent_level += 1;
+                result.push_str(&self.print(body));
+                self.indent_level -= 1;
+
+                result.push_str(&format!("{}}}\n", indent));
+                result
+            }
+            ControlStructure::Switch {
+                condition_block,
+                cases,
+            } => {
+                let indent = "  ".repeat(self.indent_level);
+                let mut result = format!("{}switch (block_{}) {{\n", indent, condition_block);
+
+                self.indent_level += 1;
+                for (case_value, case_body) in cases {
+                    let case_indent = "  ".repeat(self.indent_level);
+                    if let Some(val) = case_value {
+                        result.push_str(&format!("{}case {}:\n", case_indent, val));
+                    } else {
+                        result.push_str(&format!("{}default:\n", case_indent));
+                    }
+
+                    self.indent_level += 1;
+                    result.push_str(&self.print(case_body));
+                    self.indent_level -= 1;
+                }
+                self.indent_level -= 1;
+
+                result.push_str(&format!("{}}}\n", indent));
+                result
+            }
+            ControlStructure::BasicBlock(id) => {
+                let indent = "  ".repeat(self.indent_level);
+                format!("{}block_{};\n", indent, id)
+            }
+            ControlStructure::Break => {
+                let indent = "  ".repeat(self.indent_level);
+                format!("{}break;\n", indent)
+            }
+            ControlStructure::Continue => {
+                let indent = "  ".repeat(self.indent_level);
+                format!("{}continue;\n", indent)
+            }
+        }
+    }
+}
+
+impl Default for ControlStructurePrinter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_if_structure() {
+        let mut cfg = ControlFlowGraph::new();
+        cfg.entry_block = 0;
+
+        // if (cond) { block1 } else { block2 }
+        // Block 0 (condition) -> Block 1 (then), Block 2 (else)
+        // Block 1, 2 -> Block 3 (merge)
+        let mut block0 = BasicBlock::new(0, 0);
+        block0.successors = vec![1, 2];
+        block0.ops.push(PcodeOp::no_output(OpCode::CBranch, vec![], 0));
+
+        let mut block1 = BasicBlock::new(1, 10);
+        block1.predecessors = vec![0];
+        block1.successors = vec![3];
+
+        let mut block2 = BasicBlock::new(2, 20);
+        block2.predecessors = vec![0];
+        block2.successors = vec![3];
+
+        let mut block3 = BasicBlock::new(3, 30);
+        block3.predecessors = vec![1, 2];
+
+        cfg.blocks.insert(0, block0);
+        cfg.blocks.insert(1, block1);
+        cfg.blocks.insert(2, block2);
+        cfg.blocks.insert(3, block3);
+
+        let mut analyzer = ControlFlowAnalyzer::new();
+        let structure = analyzer.analyze(&cfg);
+
+        println!("=== If Structure ===");
+        let mut printer = ControlStructurePrinter::new();
+        println!("{}", printer.print(&structure));
+
+        assert!(matches!(structure, ControlStructure::IfThenElse { .. } | ControlStructure::Sequence(_)));
+    }
+
+    #[test]
+    fn test_loop_detection() {
+        let mut cfg = ControlFlowGraph::new();
+        cfg.entry_block = 0;
+
+        // while (block0) { block1 }
+        // Block 0 (condition) -> Block 1 (body), Block 2 (exit)
+        // Block 1 -> Block 0 (back edge)
+        let mut block0 = BasicBlock::new(0, 0);
+        block0.successors = vec![1, 2];
+        block0.ops.push(PcodeOp::no_output(OpCode::CBranch, vec![], 0));
+
+        let mut block1 = BasicBlock::new(1, 10);
+        block1.predecessors = vec![0];
+        block1.successors = vec![0]; // back edge
+
+        let mut block2 = BasicBlock::new(2, 20);
+        block2.predecessors = vec![0];
+
+        cfg.blocks.insert(0, block0);
+        cfg.blocks.insert(1, block1);
+        cfg.blocks.insert(2, block2);
+
+        let mut analyzer = ControlFlowAnalyzer::new();
+        let structure = analyzer.analyze(&cfg);
+
+        println!("=== Loop Structure ===");
+        let mut printer = ControlStructurePrinter::new();
+        println!("{}", printer.print(&structure));
+
+        assert!(!analyzer.loops.is_empty());
+        println!("Detected {} loops", analyzer.loops.len());
+    }
+}

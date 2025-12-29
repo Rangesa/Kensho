@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+﻿use anyhow::{Context, Result};
 use capstone::prelude::*;
 use goblin::Object;
 use std::fs;
@@ -23,8 +23,7 @@ impl Disassembler {
                     0xB7 => (Arch::ARM64, Mode::Arm),       // AArch64
                     0x08 => (Arch::MIPS, Mode::Mode32),     // MIPS
                     0xF3 => (Arch::RISCV, Mode::RiscV64),   // RISC-V
-                    _ => (Arch::X86, Mode::Mode64),         // デフォルト
-                }
+                    _ => (Arch::X86, Mode::Mode64),         // 繝・ヵ繧ｩ繝ｫ繝・                }
             }
             Object::PE(pe) => {
                 match pe.header.coff_header.machine {
@@ -70,8 +69,7 @@ impl Disassembler {
         let mut output = String::new();
         output.push_str(&format!("=== Disassembly at 0x{:x} ===\n\n", address));
 
-        // アドレスからバイナリ内のオフセットを計算（簡易版）
-        let offset = address as usize;
+        // 繧｢繝峨Ξ繧ｹ縺九ｉ繝舌う繝翫Μ蜀・・繧ｪ繝輔そ繝・ヨ繧定ｨ育ｮ暦ｼ育ｰ｡譏鍋沿・・        let offset = address as usize;
         if offset >= self.binary_data.len() {
             return Ok("Address out of bounds\n".to_string());
         }
@@ -89,7 +87,7 @@ impl Disassembler {
                 insn.op_str().unwrap_or("")
             ));
 
-            // デバッグ用：バイトコード表示
+            // 繝・ヰ繝・げ逕ｨ・壹ヰ繧､繝医さ繝ｼ繝芽｡ｨ遉ｺ
             let bytes = insn.bytes();
             let bytes_str = bytes
                 .iter()
@@ -102,8 +100,7 @@ impl Disassembler {
         Ok(output)
     }
 
-    /// 関数全体を逆アセンブル（制御フロー追跡付き）
-    pub fn disassemble_function(&self, start_address: u64) -> Result<(Vec<Instruction>, Vec<u64>)> {
+    /// 髢｢謨ｰ蜈ｨ菴薙ｒ騾・い繧ｻ繝ｳ繝悶Ν・亥宛蠕｡繝輔Ο繝ｼ霑ｽ霍｡莉倥″・・    pub fn disassemble_function(&self, start_address: u64) -> Result<(Vec<Instruction>, Vec<u64>)> {
         let cs = Capstone::new()
             .x86()
             .mode(self.mode)
@@ -115,8 +112,7 @@ impl Disassembler {
         let mut current_addr = start_address;
         let mut visited = std::collections::HashSet::new();
 
-        // 簡易的な関数終端検出（最大1000命令）
-        for _ in 0..1000 {
+        // 邁｡譏鍋噪縺ｪ髢｢謨ｰ邨らｫｯ讀懷・・域怙螟ｧ1000蜻ｽ莉､・・        for _ in 0..1000 {
             if visited.contains(&current_addr) {
                 break;
             }
@@ -132,25 +128,23 @@ impl Disassembler {
                 if let Some(insn) = insns.iter().next() {
                     let mnemonic = insn.mnemonic().unwrap_or("");
                     
-                    // 命令情報を保存
-                    instructions.push(Instruction {
+                    // 蜻ｽ莉､諠・ｱ繧剃ｿ晏ｭ・                    instructions.push(Instruction {
                         address: insn.address(),
                         mnemonic: mnemonic.to_string(),
                         operands: insn.op_str().unwrap_or("").to_string(),
                         size: insn.bytes().len(),
                     });
 
-                    // 分岐命令の検出
+                    // 蛻・ｲ仙多莉､縺ｮ讀懷・
                     if mnemonic.starts_with('j') || mnemonic == "call" {
-                        // 簡易的な分岐先解析（実際はより複雑）
-                        if let Some(op_str) = insn.op_str() {
+                        // 邁｡譏鍋噪縺ｪ蛻・ｲ仙・隗｣譫撰ｼ亥ｮ滄圀縺ｯ繧医ｊ隍・尅・・                        if let Some(op_str) = insn.op_str() {
                             if let Some(target) = parse_branch_target(op_str) {
                                 branches.push(target);
                             }
                         }
                     }
 
-                    // 関数終端命令
+                    // 髢｢謨ｰ邨らｫｯ蜻ｽ莉､
                     if mnemonic == "ret" || mnemonic == "retn" {
                         break;
                     }
@@ -177,7 +171,7 @@ pub struct Instruction {
 }
 
 fn parse_branch_target(op_str: &str) -> Option<u64> {
-    // "0x12345678" 形式のアドレス抽出
+    // "0x12345678" 蠖｢蠑上・繧｢繝峨Ξ繧ｹ謚ｽ蜃ｺ
     if op_str.starts_with("0x") {
         u64::from_str_radix(&op_str[2..], 16).ok()
     } else {

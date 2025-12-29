@@ -1,11 +1,15 @@
-/// P-code中間表現
-/// Ghidraの中間言語をRustで実装
+
+
+
+
 ///
-/// P-codeは74種類の汎用命令でアーキテクチャ非依存の解析を実現する
+
+
 
 use serde::{Deserialize, Serialize};
 
-/// P-code命令の種類（全74種類）
+
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum OpCode {
     // 基本操作 (1-3)
@@ -16,7 +20,7 @@ pub enum OpCode {
     // 制御フロー (4-10)
     Branch = 4,     // 無条件分岐
     CBranch = 5,    // 条件分岐
-    BranchInd = 6,  // 間接分岐（ジャンプテーブル）
+    BranchInd = 6,  // 間接分岐（ジャンプテーブル等）
     Call = 7,       // 関数呼び出し（絶対アドレス）
     CallInd = 8,    // 関数呼び出し（間接アドレス）
     CallOther = 9,  // ユーザー定義操作
@@ -41,7 +45,7 @@ pub enum OpCode {
     IntSCarry = 22,  // 符号付きキャリー
     IntSBorrow = 23, // 符号付きボロー
     Int2Comp = 24,   // 2の補数
-    IntNegate = 25,  // ビット否定 ~
+    IntNegate = 25,  // ビット反転 ~
     IntXor = 26,     // ^
     IntAnd = 27,     // &
     IntOr = 28,      // |
@@ -72,20 +76,20 @@ pub enum OpCode {
     FloatDiv = 48,   // /
     FloatMult = 49,  // *
     FloatSub = 50,   // -
-    FloatNeg = 51,   // -（単項）
+    FloatNeg = 51,   // - (単項)
     FloatAbs = 52,   // abs
     FloatSqrt = 53,  // sqrt
 
     // 浮動小数点変換 (54-59)
     FloatInt2Float = 54,    // int → float
-    FloatFloat2Float = 55,  // float → float（サイズ変換）
+    FloatFloat2Float = 55,  // float → float (サイズ変換)
     FloatTrunc = 56,        // ゼロ方向への丸め
-    FloatCeil = 57,         // +∞方向への丸め
-    FloatFloor = 58,        // -∞方向への丸め
+    FloatCeil = 57,         // +無限方向への丸め
+    FloatFloor = 58,        // -無限方向への丸め
     FloatRound = 59,        // 最近接への丸め
 
     // SSA特殊命令 (60-61)
-    MultiEqual = 60, // Phi-node（SSA合流点）
+    MultiEqual = 60, // Phi-node (SSA合流点)
     Indirect = 61,   // 間接効果を持つコピー
 
     // データ操作 (62-73)
@@ -103,7 +107,8 @@ pub enum OpCode {
     LzCount = 73,    // 先頭ゼロビットカウント
 }
 
-/// アドレス空間の種類
+
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum AddressSpace {
     Register,   // レジスタ空間
@@ -113,7 +118,8 @@ pub enum AddressSpace {
     Stack,      // スタック空間
 }
 
-/// Varnode - SSA形式の変数ノード
+
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Varnode {
     pub space: AddressSpace,
@@ -122,33 +128,39 @@ pub struct Varnode {
 }
 
 impl Varnode {
-    /// 新しいVarnodeを作成
+
+
     pub fn new(space: AddressSpace, offset: u64, size: usize) -> Self {
         Self { space, offset, size }
     }
 
-    /// レジスタVarnodeを作成
+
+
     pub fn register(offset: u64, size: usize) -> Self {
         Self::new(AddressSpace::Register, offset, size)
     }
 
-    /// メモリVarnodeを作成
+
+
     pub fn ram(offset: u64, size: usize) -> Self {
         Self::new(AddressSpace::Ram, offset, size)
     }
 
-    /// 定数Varnodeを作成
+
+
     pub fn constant(value: u64, size: usize) -> Self {
         Self::new(AddressSpace::Const, value, size)
     }
 
-    /// 一時変数Varnodeを作成
+
+
     pub fn unique(offset: u64, size: usize) -> Self {
         Self::new(AddressSpace::Unique, offset, size)
     }
 }
 
-/// P-code命令
+
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PcodeOp {
     pub opcode: OpCode,
@@ -158,22 +170,26 @@ pub struct PcodeOp {
 }
 
 impl PcodeOp {
-    /// 新しいP-code命令を作成
+
+
     pub fn new(opcode: OpCode, output: Option<Varnode>, inputs: Vec<Varnode>, address: u64) -> Self {
         Self { opcode, output, inputs, address }
     }
 
-    /// 出力なしの命令を作成
+
+
     pub fn no_output(opcode: OpCode, inputs: Vec<Varnode>, address: u64) -> Self {
         Self::new(opcode, None, inputs, address)
     }
 
-    /// 単項演算命令を作成
+
+
     pub fn unary(opcode: OpCode, output: Varnode, input: Varnode, address: u64) -> Self {
         Self::new(opcode, Some(output), vec![input], address)
     }
 
-    /// 二項演算命令を作成
+
+
     pub fn binary(opcode: OpCode, output: Varnode, lhs: Varnode, rhs: Varnode, address: u64) -> Self {
         Self::new(opcode, Some(output), vec![lhs, rhs], address)
     }

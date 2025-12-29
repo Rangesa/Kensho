@@ -1,4 +1,4 @@
-/// 汎用メモリスキャナー - あらゆるプロセスに対応
+﻿/// 汎用メモリスキャナー - あらゆるプロセスに対応
 ///
 /// Usage:
 ///   memscan --process <name or PID>
@@ -7,7 +7,7 @@
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use ghidra_mcp::memory_scanner::MemoryScanner;
+use kensho_mcp::memory_scanner::MemoryScanner;
 
 #[derive(Parser)]
 #[command(name = "memscan")]
@@ -66,11 +66,11 @@ enum Commands {
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    println!("🔍 Universal Memory Scanner");
+    println!("🎯 Universal Memory Scanner");
     println!("{}", "=".repeat(80));
 
     // プロセスをアタッチ
-    println!("\n📌 Attaching to process: {}", cli.process);
+    println!("\n🔍 Attaching to process: {}", cli.process);
     let scanner = if let Ok(pid) = cli.process.parse::<u32>() {
         MemoryScanner::from_pid(pid)?
     } else {
@@ -141,7 +141,7 @@ fn cmd_regions(scanner: &MemoryScanner) -> Result<()> {
 }
 
 fn cmd_int(scanner: &MemoryScanner, value: i64, size: u8) -> Result<()> {
-    println!("\n🔢 Scanning for integer: {} (size: {} bytes)", value, size);
+    println!("\n🔎 Scanning for integer: {} (size: {} bytes)", value, size);
 
     let results = match size {
         4 => scanner.scan_int32(value as i32)?,
@@ -166,7 +166,7 @@ fn cmd_int(scanner: &MemoryScanner, value: i64, size: u8) -> Result<()> {
 }
 
 fn cmd_float(scanner: &MemoryScanner, value: f32) -> Result<()> {
-    println!("\n🔢 Scanning for float: {}", value);
+    println!("\n🔎 Scanning for float: {}", value);
 
     let results = scanner.scan_float(value)?;
     println!("   ✅ Found {} matches", results.len());
@@ -183,7 +183,7 @@ fn cmd_float(scanner: &MemoryScanner, value: f32) -> Result<()> {
 }
 
 fn cmd_string(scanner: &MemoryScanner, text: &str, case_sensitive: bool) -> Result<()> {
-    println!("\n🔤 Scanning for string: \"{}\"", text);
+    println!("\n🔎 Scanning for string: \"{}\"", text);
     println!("   Case sensitive: {}", case_sensitive);
 
     let search_text = if case_sensitive {
@@ -207,7 +207,7 @@ fn cmd_string(scanner: &MemoryScanner, text: &str, case_sensitive: bool) -> Resu
 }
 
 fn cmd_pattern(scanner: &MemoryScanner, pattern_str: &str) -> Result<()> {
-    println!("\n🔍 Scanning for pattern: {}", pattern_str);
+    println!("\n🔎 Scanning for pattern: {}", pattern_str);
 
     // パターンをパース（例: "48 8B 5C 24 ?? 48 83 C4"）
     let parts: Vec<&str> = pattern_str.split_whitespace().collect();
@@ -250,7 +250,7 @@ fn cmd_pattern(scanner: &MemoryScanner, pattern_str: &str) -> Result<()> {
 }
 
 fn cmd_interactive(scanner: &MemoryScanner) -> Result<()> {
-    println!("\n🎮 Interactive Mode");
+    println!("\n⌨️ Interactive Mode");
     println!("   Commands:");
     println!("     int <value>        - Scan for integer");
     println!("     float <value>      - Scan for float");

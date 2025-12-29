@@ -1,62 +1,67 @@
-/// 型推論エンジン
-/// P-code命令から変数の型を推論し、C言語風の型情報を生成する
+/// Type inference for P-code decompilation
+/// Infers variable types from operation context
+///
+/// 拡張機能:
+/// - ポインタの指す先の型の詳細推論
+/// - 配列サイズと要素型の自動検出
+/// - 構造体の入れ子構造解析
 
 use super::pcode::*;
 use std::collections::{HashMap, HashSet};
 
-/// 推論される型
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// Represents a data type in the decompiled output
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Type {
-    /// 未知の型
+    /// Unknown type
     Unknown,
-    /// void型
+    /// Void type
     Void,
-    /// 整数型
+    /// Integer type
     Int(IntType),
-    /// 浮動小数点型
+    /// Floating point type
     Float(FloatType),
-    /// ポインタ型
+    /// Pointer to another type
     Pointer(Box<Type>),
-    /// 配列型 (要素型, サイズ)
+    /// Array type
     Array(Box<Type>, usize),
-    /// 構造体型 (フィールド名, 型)
+    /// Struct type
     Struct(Vec<(String, Type)>),
-    /// 関数型 (引数型リスト, 戻り値型)
+    /// Function type
     Function(Vec<Type>, Box<Type>),
 }
 
-/// 整数型の種類
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// Integer type variants
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum IntType {
-    /// 符号付き8ビット
+    /// Signed 8-bit
     I8,
-    /// 符号付き16ビット
+    /// Signed 16-bit
     I16,
-    /// 符号付き32ビット
+    /// Signed 32-bit
     I32,
-    /// 符号付き64ビット
+    /// Signed 64-bit
     I64,
-    /// 符号なし8ビット
+    /// Unsigned 8-bit
     U8,
-    /// 符号なし16ビット
+    /// Unsigned 16-bit
     U16,
-    /// 符号なし32ビット
+    /// Unsigned 32-bit
     U32,
-    /// 符号なし64ビット
+    /// Unsigned 64-bit
     U64,
 }
 
-/// 浮動小数点型の種類
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+/// Floating point type variants
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FloatType {
-    /// 32ビット浮動小数点
+    /// 32-bit float
     F32,
-    /// 64ビット浮動小数点
+    /// 64-bit float
     F64,
 }
 
 impl Type {
-    /// サイズから基本的な整数型を推論
+    /// Create integer type from size and signedness
     pub fn int_from_size(size: usize, signed: bool) -> Self {
         match (size, signed) {
             (1, true) => Type::Int(IntType::I8),
@@ -71,7 +76,7 @@ impl Type {
         }
     }
 
-    /// サイズから浮動小数点型を推論
+    /// Create float type from size
     pub fn float_from_size(size: usize) -> Self {
         match size {
             4 => Type::Float(FloatType::F32),
@@ -80,7 +85,7 @@ impl Type {
         }
     }
 
-    /// 型のサイズを取得
+    /// Get the size in bytes of this type
     pub fn size(&self) -> usize {
         match self {
             Type::Unknown => 0,
@@ -95,16 +100,16 @@ impl Type {
                 FloatType::F32 => 4,
                 FloatType::F64 => 8,
             },
-            Type::Pointer(_) => 8, // 64ビットポインタ
+            Type::Pointer(_) => 8,
             Type::Array(elem_ty, count) => elem_ty.size() * count,
             Type::Struct(fields) => {
                 fields.iter().map(|(_, ty)| ty.size()).sum()
             }
-            Type::Function(_, _) => 8, // 関数ポインタ
+            Type::Function(_, _) => 8,
         }
     }
 
-    /// C言語風の型名を取得
+    /// Convert type to C-style string
     pub fn to_c_string(&self) -> String {
         match self {
             Type::Unknown => "unknown".to_string(),
@@ -139,12 +144,12 @@ impl Type {
         }
     }
 
-    /// 型が互換性があるかチェック
+    /// Check if this type is compatible with another
     pub fn is_compatible_with(&self, other: &Type) -> bool {
         match (self, other) {
             (Type::Unknown, _) | (_, Type::Unknown) => true,
             (Type::Void, Type::Void) => true,
-            (Type::Int(_), Type::Int(_)) => true, // 整数型同士は互換
+            (Type::Int(_), Type::Int(_)) => true,
             (Type::Float(_), Type::Float(_)) => true,
             (Type::Pointer(a), Type::Pointer(b)) => a.is_compatible_with(b),
             (Type::Array(a, _), Type::Array(b, _)) => a.is_compatible_with(b),
@@ -153,24 +158,25 @@ impl Type {
     }
 }
 
-/// 型制約
+/// Type constraint for a varnode
 #[derive(Debug, Clone)]
 pub struct TypeConstraint {
-    /// 制約対象のVarnode
+    /// The varnode being constrained
     pub varnode: Varnode,
-    /// 推論された型
+    /// The inferred type
     pub type_: Type,
-    /// 制約の理由（デバッグ用）
+    /// Reason for this constraint
     pub reason: String,
 }
 
-/// 型推論エンジン
+/// Type inference engine
+#[derive(Debug)]
 pub struct TypeInference {
-    /// 収集された型制約
+    /// Collected type constraints
     constraints: Vec<TypeConstraint>,
-    /// 推論済みの型
+    /// Final inferred types
     inferred_types: HashMap<Varnode, Type>,
-    /// 型の候補（複数の制約がある場合）
+    /// Candidate types for each varnode
     type_candidates: HashMap<Varnode, Vec<Type>>,
 }
 
@@ -183,54 +189,51 @@ impl TypeInference {
         }
     }
 
-    /// P-code命令から型制約を収集
+    /// Infer types from P-code operations
     pub fn infer_from_pcode(&mut self, ops: &[PcodeOp]) {
         for op in ops {
             self.collect_constraints_from_op(op);
         }
     }
 
-    /// 単一のP-code命令から型制約を収集
+    /// Collect type constraints from a single operation
     fn collect_constraints_from_op(&mut self, op: &PcodeOp) {
         match op.opcode {
-            // 整数演算 → 整数型
             OpCode::IntAdd | OpCode::IntSub | OpCode::IntMult | OpCode::IntDiv |
             OpCode::IntSDiv | OpCode::IntRem | OpCode::IntSRem => {
                 if let Some(ref output) = op.output {
                     self.add_constraint(
                         output.clone(),
                         Type::int_from_size(output.size, true),
-                        format!("整数演算 {:?} の出力", op.opcode),
+                        format!("Integer operation {:?} output", op.opcode),
                     );
                 }
                 for input in &op.inputs {
                     self.add_constraint(
                         input.clone(),
                         Type::int_from_size(input.size, true),
-                        format!("整数演算 {:?} の入力", op.opcode),
+                        format!("Integer operation {:?} input", op.opcode),
                     );
                 }
             }
 
-            // 浮動小数点演算 → 浮動小数点型
             OpCode::FloatAdd | OpCode::FloatSub | OpCode::FloatMult | OpCode::FloatDiv => {
                 if let Some(ref output) = op.output {
                     self.add_constraint(
                         output.clone(),
                         Type::float_from_size(output.size),
-                        format!("浮動小数点演算 {:?} の出力", op.opcode),
+                        format!("Float operation {:?} output", op.opcode),
                     );
                 }
                 for input in &op.inputs {
                     self.add_constraint(
                         input.clone(),
                         Type::float_from_size(input.size),
-                        format!("浮動小数点演算 {:?} の入力", op.opcode),
+                        format!("Float operation {:?} input", op.opcode),
                     );
                 }
             }
 
-            // ロード → ポインタ型
             OpCode::Load => {
                 if op.inputs.len() >= 2 {
                     let ptr = &op.inputs[1];
@@ -238,13 +241,12 @@ impl TypeInference {
                         self.add_constraint(
                             ptr.clone(),
                             Type::Pointer(Box::new(Type::int_from_size(output.size, true))),
-                            "Load命令のアドレス引数".to_string(),
+                            "Load address operand".to_string(),
                         );
                     }
                 }
             }
 
-            // ストア → ポインタ型
             OpCode::Store => {
                 if op.inputs.len() >= 3 {
                     let ptr = &op.inputs[1];
@@ -252,89 +254,81 @@ impl TypeInference {
                     self.add_constraint(
                         ptr.clone(),
                         Type::Pointer(Box::new(Type::int_from_size(value.size, true))),
-                        "Store命令のアドレス引数".to_string(),
+                        "Store address operand".to_string(),
                     );
                 }
             }
 
-            // コピー → 型を伝播
             OpCode::Copy => {
                 if let Some(ref output) = op.output {
                     if !op.inputs.is_empty() {
                         let input = &op.inputs[0];
-                        // 入力と出力の型は同じ
                         if let Some(input_type) = self.inferred_types.get(input).cloned() {
                             self.add_constraint(
                                 output.clone(),
                                 input_type,
-                                "Copy命令による型伝播".to_string(),
+                                "Copy propagation".to_string(),
                             );
                         }
                     }
                 }
             }
 
-            // 比較演算 → 整数型
             OpCode::IntEqual | OpCode::IntNotEqual | OpCode::IntLess | OpCode::IntSLess |
             OpCode::IntLessEqual | OpCode::IntSLessEqual => {
                 if let Some(ref output) = op.output {
                     self.add_constraint(
                         output.clone(),
-                        Type::Int(IntType::I8), // bool として 1バイト
-                        format!("比較演算 {:?} の出力", op.opcode),
+                        Type::Int(IntType::I8),
+                        format!("Comparison {:?} output", op.opcode),
                     );
                 }
                 for input in &op.inputs {
                     self.add_constraint(
                         input.clone(),
                         Type::int_from_size(input.size, true),
-                        format!("比較演算 {:?} の入力", op.opcode),
+                        format!("Comparison {:?} input", op.opcode),
                     );
                 }
             }
 
-            // ビット演算 → 整数型
             OpCode::IntAnd | OpCode::IntOr | OpCode::IntXor | OpCode::IntNegate |
             OpCode::IntLeft | OpCode::IntRight | OpCode::IntSRight => {
                 if let Some(ref output) = op.output {
                     self.add_constraint(
                         output.clone(),
-                        Type::int_from_size(output.size, false), // 符号なしとして扱う
-                        format!("ビット演算 {:?} の出力", op.opcode),
+                        Type::int_from_size(output.size, false),
+                        format!("Bitwise {:?} output", op.opcode),
                     );
                 }
             }
 
-            // 符号拡張 → 符号付き整数
             OpCode::IntSExt => {
                 if let Some(ref output) = op.output {
                     self.add_constraint(
                         output.clone(),
                         Type::int_from_size(output.size, true),
-                        "符号拡張の出力".to_string(),
+                        "Sign extension output".to_string(),
                     );
                 }
             }
 
-            // ゼロ拡張 → 符号なし整数
             OpCode::IntZExt => {
                 if let Some(ref output) = op.output {
                     self.add_constraint(
                         output.clone(),
                         Type::int_from_size(output.size, false),
-                        "ゼロ拡張の出力".to_string(),
+                        "Zero extension output".to_string(),
                     );
                 }
             }
 
-            // 関数呼び出し
             OpCode::Call => {
-                // 戻り値の型を推論（後で詳細化）
                 if let Some(ref output) = op.output {
                     self.add_constraint(
                         output.clone(),
                         Type::int_from_size(output.size, true),
-                        "関数呼び出しの戻り値".to_string(),
+                        "Function call return value".to_string(),
                     );
                 }
             }
@@ -343,9 +337,8 @@ impl TypeInference {
         }
     }
 
-    /// 型制約を追加
+    /// Add a type constraint
     fn add_constraint(&mut self, varnode: Varnode, type_: Type, reason: String) {
-        // 定数は型推論しない
         if varnode.space == AddressSpace::Const {
             return;
         }
@@ -356,27 +349,22 @@ impl TypeInference {
             reason,
         });
 
-        // 候補リストに追加
         self.type_candidates
             .entry(varnode)
             .or_insert_with(Vec::new)
             .push(type_);
     }
 
-    /// 型を伝播させる
+    /// Propagate types through constraints
     pub fn propagate_types(&mut self) {
-        // 制約から型を決定
         for constraint in &self.constraints {
             let varnode = &constraint.varnode;
             let type_ = &constraint.type_;
 
-            // 既存の型と互換性をチェック
             if let Some(existing_type) = self.inferred_types.get(varnode) {
                 if !existing_type.is_compatible_with(type_) {
-                    // 互換性がない場合は警告（今は無視）
                     continue;
                 }
-                // より具体的な型を選択
                 if matches!(existing_type, Type::Unknown) {
                     self.inferred_types.insert(varnode.clone(), type_.clone());
                 }
@@ -386,28 +374,24 @@ impl TypeInference {
         }
     }
 
-    /// 型制約を解決
+    /// Resolve types for all varnodes
     pub fn resolve_types(&mut self) {
-        // 各Varnodeの候補から最適な型を選択
         for (varnode, candidates) in &self.type_candidates {
             if candidates.is_empty() {
                 continue;
             }
 
-            // 既に推論済みならスキップ
             if self.inferred_types.contains_key(varnode) {
                 continue;
             }
 
-            // 候補の中で最も具体的な型を選択
             let best_type = self.select_best_type(candidates);
             self.inferred_types.insert(varnode.clone(), best_type);
         }
     }
 
-    /// 複数の型候補から最適な型を選択
+    /// Select the best type from candidates
     fn select_best_type(&self, candidates: &[Type]) -> Type {
-        // Unknown以外を優先
         let non_unknown: Vec<&Type> = candidates
             .iter()
             .filter(|t| !matches!(t, Type::Unknown))
@@ -417,21 +401,18 @@ impl TypeInference {
             return Type::Unknown;
         }
 
-        // ポインタ型を優先
         for t in &non_unknown {
             if matches!(t, Type::Pointer(_)) {
                 return (*t).clone();
             }
         }
 
-        // 浮動小数点型を優先
         for t in &non_unknown {
             if matches!(t, Type::Float(_)) {
                 return (*t).clone();
             }
         }
 
-        // 整数型（最大サイズを選択）
         let mut max_size = 0;
         let mut best = Type::Unknown;
         for t in &non_unknown {
@@ -444,21 +425,210 @@ impl TypeInference {
         best
     }
 
-    /// 推論結果を取得
+    /// Get inferred type for a varnode
     pub fn get_type(&self, varnode: &Varnode) -> Option<&Type> {
         self.inferred_types.get(varnode)
     }
 
-    /// すべての推論結果を取得
+    /// Get all inferred types
     pub fn get_all_types(&self) -> &HashMap<Varnode, Type> {
         &self.inferred_types
     }
 
-    /// 型推論を実行（収集→伝播→解決）
+    /// Run full type inference
     pub fn run(&mut self, ops: &[PcodeOp]) {
         self.infer_from_pcode(ops);
         self.propagate_types();
         self.resolve_types();
+    }
+
+    /// ポインタの指す先の型を推論
+    /// メモリアクセスパターンから、ポインタが指す実際の型を特定
+    pub fn infer_pointee_type(&mut self, ptr_varnode: &Varnode, ops: &[PcodeOp]) -> Type {
+        // このポインタを使ったLOAD/STORE命令を探す
+        for op in ops {
+            match op.opcode {
+                OpCode::Load => {
+                    if op.inputs.len() >= 2 && &op.inputs[1] == ptr_varnode {
+                        if let Some(ref output) = op.output {
+                            // LOADの出力サイズから指す先の型を推論
+                            return self.infer_type_from_size_and_usage(output.size, ops, output);
+                        }
+                    }
+                }
+                OpCode::Store => {
+                    if op.inputs.len() >= 3 && &op.inputs[1] == ptr_varnode {
+                        let value = &op.inputs[2];
+                        // STOREされる値の型から指す先の型を推論
+                        return self.infer_type_from_size_and_usage(value.size, ops, value);
+                    }
+                }
+                _ => {}
+            }
+        }
+        Type::Unknown
+    }
+
+    /// サイズと使用パターンから型を推論
+    fn infer_type_from_size_and_usage(&self, size: usize, ops: &[PcodeOp], varnode: &Varnode) -> Type {
+        // この変数が使われている演算から型を判定
+        for op in ops {
+            // 浮動小数点演算で使われている？
+            if matches!(op.opcode, OpCode::FloatAdd | OpCode::FloatSub | OpCode::FloatMult | OpCode::FloatDiv) {
+                if op.inputs.contains(varnode) || op.output.as_ref() == Some(varnode) {
+                    return Type::float_from_size(size);
+                }
+            }
+
+            // ポインタとして使われている？
+            if matches!(op.opcode, OpCode::Load | OpCode::Store) {
+                if op.inputs.contains(varnode) {
+                    // ポインタの可能性
+                    return Type::Pointer(Box::new(Type::Unknown));
+                }
+            }
+        }
+
+        // デフォルトは整数型
+        Type::int_from_size(size, true)
+    }
+
+    /// 配列のサイズと要素型を推論
+    /// ループ内でのインデックスアクセスパターンから配列を検出
+    pub fn infer_array_type(&mut self, base_varnode: &Varnode, ops: &[PcodeOp]) -> Option<Type> {
+        // パターン: base + (index * element_size)
+        let mut accesses = Vec::new();
+
+        for op in ops {
+            if let OpCode::PtrAdd = op.opcode {
+                if op.inputs.len() >= 2 && &op.inputs[0] == base_varnode {
+                    // オフセット計算を解析
+                    if let Some(offset_info) = self.analyze_offset_calculation(&op.inputs[1], ops) {
+                        accesses.push(offset_info);
+                    }
+                }
+            }
+        }
+
+        if accesses.is_empty() {
+            return None;
+        }
+
+        // 最も一般的な要素サイズを特定
+        let mut size_counts: HashMap<usize, usize> = HashMap::new();
+        for (element_size, _) in &accesses {
+            *size_counts.entry(*element_size).or_insert(0) += 1;
+        }
+
+        if let Some((element_size, _)) = size_counts.iter().max_by_key(|(_, count)| *count) {
+            // 最大インデックスから配列サイズを推定
+            let max_index = accesses.iter()
+                .map(|(_, idx)| *idx)
+                .max()
+                .unwrap_or(0);
+
+            let element_type = Type::int_from_size(*element_size, true);
+            return Some(Type::Array(Box::new(element_type), max_index + 1));
+        }
+
+        None
+    }
+
+    /// オフセット計算を解析（index * element_size）
+    fn analyze_offset_calculation(&self, offset_varnode: &Varnode, ops: &[PcodeOp]) -> Option<(usize, usize)> {
+        // offset = index * element_size のパターンを検出
+        for op in ops {
+            if op.opcode == OpCode::IntMult {
+                if let Some(ref output) = op.output {
+                    if output == offset_varnode && op.inputs.len() >= 2 {
+                        // 定数乗算を検出
+                        if op.inputs[1].space == AddressSpace::Const {
+                            let element_size = op.inputs[1].offset as usize;
+                            // index の最大値を推定（TODO: より高度な解析）
+                            return Some((element_size, 10)); // 仮の配列サイズ
+                        }
+                    }
+                }
+            }
+        }
+        None
+    }
+
+    /// 構造体の入れ子構造を検出
+    /// フィールドがポインタで、そのポインタ先も構造体の場合を検出
+    pub fn detect_nested_struct(&mut self, struct_base: &Varnode, ops: &[PcodeOp]) -> HashMap<usize, Type> {
+        let mut nested_fields: HashMap<usize, Type> = HashMap::new();
+
+        // 各フィールドへのアクセスを追跡
+        for op in ops {
+            if let OpCode::Load = op.opcode {
+                if op.inputs.len() >= 2 {
+                    // base + offset のパターンを検出
+                    if let Some((offset, field_ptr)) = self.extract_struct_field_access(&op.inputs[1], struct_base) {
+                        // このフィールドポインタが別の構造体アクセスに使われているか
+                        if let Some(ref output) = op.output {
+                            if self.is_used_as_struct_pointer(output, ops) {
+                                nested_fields.insert(offset, Type::Pointer(Box::new(Type::Unknown)));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        nested_fields
+    }
+
+    /// 構造体フィールドアクセスを抽出（base + offset）
+    fn extract_struct_field_access(&self, addr_varnode: &Varnode, expected_base: &Varnode) -> Option<(usize, Varnode)> {
+        // TODO: より高度なアドレス計算の解析
+        // 現在は単純なケースのみ対応
+        None
+    }
+
+    /// 変数が構造体ポインタとして使われているか判定
+    fn is_used_as_struct_pointer(&self, varnode: &Varnode, ops: &[PcodeOp]) -> bool {
+        // 複数の異なるオフセットでアクセスされていれば構造体の可能性
+        let mut offsets = HashSet::new();
+
+        for op in ops {
+            if matches!(op.opcode, OpCode::Load | OpCode::Store) {
+                if op.inputs.contains(varnode) {
+                    // TODO: オフセット値を抽出
+                    offsets.insert(0);
+                }
+            }
+        }
+
+        offsets.len() > 1
+    }
+
+    /// 型推論結果のサマリーを生成
+    pub fn generate_summary(&self) -> String {
+        let mut summary = String::new();
+        summary.push_str(&format!("推論された型: {} 個\n", self.inferred_types.len()));
+
+        let mut by_type: HashMap<String, usize> = HashMap::new();
+        for ty in self.inferred_types.values() {
+            let type_name = match ty {
+                Type::Unknown => "Unknown",
+                Type::Void => "Void",
+                Type::Int(_) => "Integer",
+                Type::Float(_) => "Float",
+                Type::Pointer(_) => "Pointer",
+                Type::Array(_, _) => "Array",
+                Type::Struct(_) => "Struct",
+                Type::Function(_, _) => "Function",
+            };
+            *by_type.entry(type_name.to_string()).or_insert(0) += 1;
+        }
+
+        summary.push_str("\n型の内訳:\n");
+        for (type_name, count) in &by_type {
+            summary.push_str(&format!("  {}: {} 個\n", type_name, count));
+        }
+
+        summary
     }
 }
 
@@ -470,7 +640,6 @@ mod tests {
     fn test_int_type_inference() {
         let mut inference = TypeInference::new();
 
-        // mov rax, rbx (8バイトコピー)
         let rax = Varnode { space: AddressSpace::Register, offset: 0, size: 8 };
         let rbx = Varnode { space: AddressSpace::Register, offset: 24, size: 8 };
 
@@ -483,7 +652,6 @@ mod tests {
 
         inference.run(&[op]);
 
-        // raxの型が推論されていることを確認
         assert!(inference.get_type(&rax).is_some());
     }
 
@@ -516,7 +684,6 @@ mod tests {
         let value = Varnode { space: AddressSpace::Register, offset: 8, size: 4 };
         let space_id = Varnode { space: AddressSpace::Const, offset: 0, size: 8 };
 
-        // *rax = value (4バイトストア)
         let op = PcodeOp {
             opcode: OpCode::Store,
             output: None,

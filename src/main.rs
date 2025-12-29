@@ -1,4 +1,4 @@
-use anyhow::Result;
+﻿use anyhow::{Result, Context};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tracing::{info, error};
 use serde::{Deserialize, Serialize};
@@ -11,8 +11,12 @@ mod disassembler;
 mod decompiler;
 mod ghidra_headless;
 
-// Ghidraデコンパイラコアのプロトタイプ実装（新規）
+// Ghidraデコンパイラコアのプロトタイプ実装（新規追加）
 mod decompiler_prototype;
+
+// メモリスキャナ（Windows専用）
+#[cfg(windows)]
+mod memory_scanner;
 
 use hierarchical_analyzer::HierarchicalAnalyzer;
 use ghidra_headless::GhidraHeadless;
@@ -48,7 +52,7 @@ async fn main() -> Result<()> {
         .with_level(true)
         .init();
 
-    info!("🦀 Ghidra-MCP Hierarchical Server starting...");
+    info!("🦀 Kensho MCP Hierarchical Server starting...");
 
     // 階層的解析器を初期化（キャッシュ機能付き）
     let analyzer = Arc::new(Mutex::new(HierarchicalAnalyzer::new()));
@@ -70,7 +74,7 @@ async fn main() -> Result<()> {
             }
         }
     } else {
-        info!("⚠️  Ghidra Headless disabled (GHIDRA_PATH not set)");
+        info!("💡 Ghidra Headless disabled (GHIDRA_PATH not set)");
         None
     };
 
@@ -79,7 +83,7 @@ async fn main() -> Result<()> {
     let mut reader = BufReader::new(stdin);
     let mut line = String::new();
 
-    info!("✅ Server ready (Hierarchical Analysis Mode)");
+    info!("🚀 Server ready (Hierarchical Analysis Mode)");
 
     loop {
         line.clear();
@@ -159,7 +163,7 @@ async fn handle_initialize() -> Result<Value> {
             "tools": {}
         },
         "serverInfo": {
-            "name": "ghidra-mcp-hierarchical",
+            "name": "kensho-mcp-hierarchical",
             "version": "2.0.0",
             "description": "Hierarchical binary analysis - prevents context overflow"
         }
@@ -194,7 +198,7 @@ async fn handle_list_tools(ghidra_enabled: bool) -> Result<Value> {
                         "path": {"type": "string"},
                         "page": {
                             "type": "integer",
-                            "description": "ページ番号（0始まり）",
+                            "description": "ページ番号（0開始）",
                             "default": 0
                         },
                         "page_size": {
@@ -207,7 +211,7 @@ async fn handle_list_tools(ghidra_enabled: bool) -> Result<Value> {
                 }
             }),
 
-            // 階層2: 関数一覧（ページネーション + フィルタ）
+            // 階層2: 関数一覧（ページネーション + フィルタリング対応）
             json!({
                 "name": "list_functions",
                 "description": "関数一覧を取得（ページネーション対応、名前フィルタ可能）。大規模バイナリでは必ずフィルタ使用を推奨",
@@ -352,6 +356,31 @@ async fn handle_list_tools(ghidra_enabled: bool) -> Result<Value> {
                     },
                     "required": ["path", "function_address", "file_offset"]
                 }
+            }),
+
+            // Phase 1: メモリダンプからのデコンパイル（パッキング対策）
+            json!({
+                "name": "decompile_memory_dump",
+                "description": "メモリダンプから関数をデコンパイル（キャッシュ対応、パッキング対策）",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "dump_path": {
+                            "type": "string",
+                            "description": "ダンプファイルパス（拡張子なし、.dump.json/.dump.binが自動追加）"
+                        },
+                        "function_offset": {
+                            "type": "string",
+                            "description": "関数のオフセット（16進数: 0x1000）"
+                        },
+                        "max_instructions": {
+                            "type": "integer",
+                            "description": "最大命令数",
+                            "default": 1000
+                        }
+                    },
+                    "required": ["dump_path", "function_offset"]
+                }
             })
     ];
 
@@ -373,6 +402,38 @@ async fn handle_list_tools(ghidra_enabled: bool) -> Result<Value> {
                     }
                 },
                 "required": ["path", "function_address"]
+            }
+        }));
+    }
+
+    // Windows専用: プロセスメモリダンプツール（パッキング対策）
+    #[cfg(windows)]
+    {
+        tools.push(json!({
+            "name": "dump_process_memory",
+            "description": "プロセスメモリをダンプしてファイルに保存（パッキング対策、Windows専用）",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "process_name": {
+                        "type": "string",
+                        "description": "プロセス名またはPID"
+                    },
+                    "address": {
+                        "type": "string",
+                        "description": "ダンプ開始アドレス（16進数: 0x140000000）"
+                    },
+                    "size": {
+                        "type": "integer",
+                        "description": "ダンプサイズ（バイト）",
+                        "default": 1048576
+                    },
+                    "output_path": {
+                        "type": "string",
+                        "description": "出力パス（拡張子なし、.dump.json/.dump.binが自動追加）"
+                    }
+                },
+                "required": ["process_name", "address", "output_path"]
             }
         }));
     }
@@ -451,10 +512,10 @@ async fn handle_tool_call(
         }
         
         "list_imports" => {
-            // TODO: 実装
-            json!({
-                "message": "Not yet implemented"
-            })
+            let path = arguments["path"].as_str().unwrap();
+            let mut analyzer = analyzer.lock().await;
+            let imports = analyzer.list_imports(path)?;
+            serde_json::to_value(imports)?
         }
 
         "decompile_function_native" => {
@@ -502,7 +563,7 @@ async fn handle_tool_call(
             let mut type_inference = TypeInference::new();
             type_inference.run(&pcodes);
 
-            // 制御構造検出
+            // 制御構造解析
             let mut analyzer = ControlFlowAnalyzer::new();
             let structure = analyzer.analyze(&cfg);
 
@@ -585,7 +646,7 @@ async fn handle_tool_call(
             };
 
             // キャッシュディレクトリを設定
-            let cache_dir = env::temp_dir().join("ghidra_mcp_cache");
+            let cache_dir = env::temp_dir().join("kensho_mcp_cache");
             let decompiler = ParallelDecompiler::new(&cache_dir)?;
 
             // バイナリをロード
@@ -644,6 +705,101 @@ async fn handle_tool_call(
                     "error": "Ghidra Headless not enabled. Set GHIDRA_PATH environment variable."
                 })
             }
+        }
+
+        "decompile_memory_dump" => {
+            use decompiler_prototype::{MemoryDumpFile, ParallelDecompiler};
+            use std::env;
+
+            let dump_path = arguments["dump_path"].as_str().unwrap();
+            let offset_str = arguments["function_offset"].as_str().unwrap();
+            let max_instructions = arguments["max_instructions"].as_u64().unwrap_or(1000) as usize;
+
+            // Parse offset
+            let offset = if offset_str.starts_with("0x") {
+                u64::from_str_radix(&offset_str[2..], 16)?
+            } else {
+                offset_str.parse()?
+            };
+
+            // Load dump
+            let dump_file = MemoryDumpFile::new(dump_path);
+            let (metadata, data) = dump_file.load()
+                .context("Failed to load memory dump")?;
+
+            // Decompile from dump
+            let cache_dir = env::temp_dir().join("kensho_mcp_cache");
+            let decompiler = ParallelDecompiler::new(&cache_dir)?;
+
+            // Calculate function address as base_address + offset
+            let function_address = metadata.base_address + offset;
+
+            let result = decompiler.decompile_function_cached(
+                None,  // No file path - using in-memory data
+                &data,
+                function_address,
+                offset as usize,  // file_offset = offset in dump
+                max_instructions
+            )?;
+
+            let cache_stats = decompiler.get_cache_stats();
+
+            json!({
+                "process_name": metadata.process_name,
+                "pid": metadata.pid,
+                "base_address": format!("0x{:x}", metadata.base_address),
+                "function_address": format!("0x{:X}", result.address),
+                "pcode_count": result.pcode_count,
+                "block_count": result.block_count,
+                "type_count": result.type_count,
+                "loop_count": result.loop_count,
+                "control_structure": result.control_structure,
+                "cached_at": result.cached_at,
+                "cache_stats": {
+                    "memory_cached_binaries": cache_stats.memory_cached_binaries,
+                    "disk_cached_binaries": cache_stats.disk_cached_binaries,
+                    "cache_directory": cache_stats.cache_directory
+                },
+                "backend": "Memory Dump Decompiler"
+            })
+        }
+
+        #[cfg(windows)]
+        "dump_process_memory" => {
+            use decompiler_prototype::{MemoryDumpFile, memory_dump::create_dump_from_scanner};
+
+            let process_name = arguments["process_name"].as_str().unwrap();
+            let address_str = arguments["address"].as_str().unwrap();
+            let size = arguments["size"].as_u64().unwrap_or(1048576) as usize;
+            let output_path = arguments["output_path"].as_str().unwrap();
+
+            // Parse address
+            let address = if address_str.starts_with("0x") {
+                u64::from_str_radix(&address_str[2..], 16)?
+            } else {
+                address_str.parse()?
+            };
+
+            // Connect to process
+            let scanner = memory_scanner::MemoryScanner::from_process_name(process_name)?;
+
+            // Create dump
+            let (metadata, data) = create_dump_from_scanner(&scanner, address, size)?;
+
+            // Save to disk
+            let dump_file = MemoryDumpFile::new(output_path);
+            dump_file.save(&metadata, &data)
+                .context("Failed to save memory dump")?;
+
+            json!({
+                "success": true,
+                "process_name": metadata.process_name,
+                "pid": metadata.pid,
+                "base_address": format!("0x{:x}", metadata.base_address),
+                "size": metadata.size,
+                "output_metadata": dump_file.metadata_path().display().to_string(),
+                "output_data": dump_file.data_path().display().to_string()
+            })
         }
 
         _ => {

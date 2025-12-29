@@ -1,0 +1,443 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/anthropics/kensho-mcp/schema/analysis_result.schema.json",
+  "title": "Kensho MCP Analysis Result",
+  "description": "AI-First binary analysis result schema for Kensho MCP",
+  "type": "object",
+  "required": ["format_version", "binary", "function", "cfg", "confidence", "metadata"],
+  "properties": {
+    "format_version": {
+      "type": "string",
+      "description": "JSONフォーマットのバージョン",
+      "pattern": "^\\d+\\.\\d+$",
+      "examples": ["1.0"]
+    },
+    "analysis_timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "解析実行日時（RFC3339形式）"
+    },
+    "binary": {
+      "type": "object",
+      "required": ["path", "architecture", "format"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "バイナリファイルのパス"
+        },
+        "architecture": {
+          "type": "string",
+          "enum": ["x86-64"],
+          "description": "ターゲットアーキテクチャ（x86-64のみ対応）"
+        },
+        "format": {
+          "type": "string",
+          "enum": ["PE", "ELF", "Mach-O", "unknown"],
+          "description": "バイナリフォーマット"
+        }
+      }
+    },
+    "function": {
+      "type": "object",
+      "required": ["address", "size", "entry_point", "exit_points"],
+      "properties": {
+        "address": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "関数開始アドレス"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "関数のサイズ（バイト）"
+        },
+        "entry_point": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "エントリーポイントアドレス"
+        },
+        "exit_points": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^0x[0-9a-fA-F]+$"
+          },
+          "description": "リターン命令のアドレス一覧"
+        },
+        "name": {
+          "type": "object",
+          "required": ["known", "value", "source"],
+          "properties": {
+            "known": {
+              "type": "boolean",
+              "description": "関数名が既知かどうか"
+            },
+            "value": {
+              "type": "string",
+              "description": "関数名"
+            },
+            "source": {
+              "type": "string",
+              "enum": ["DWARF", "PDB", "export", "inferred"],
+              "description": "関数名のソース"
+            }
+          }
+        }
+      }
+    },
+    "cfg": {
+      "type": "object",
+      "required": ["entry_block", "blocks"],
+      "properties": {
+        "entry_block": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "エントリーブロックのID"
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/BasicBlock"
+          },
+          "description": "基本ブロックの配列"
+        }
+      }
+    },
+    "dataflow": {
+      "type": "object",
+      "properties": {
+        "def_use_chains": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DefUseChain"
+          },
+          "description": "定義-使用連鎖の配列"
+        }
+      }
+    },
+    "type_inference": {
+      "type": "object",
+      "properties": {
+        "varnodes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/VarnodeTypeInfo"
+          },
+          "description": "型推論されたVarnode一覧"
+        }
+      }
+    },
+    "symbols": {
+      "type": "object",
+      "properties": {
+        "functions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FunctionSymbol"
+          },
+          "description": "関数シンボル一覧"
+        },
+        "variables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/VariableSymbol"
+          },
+          "description": "変数シンボル一覧"
+        }
+      }
+    },
+    "confidence": {
+      "type": "object",
+      "required": ["control_flow", "data_types", "variable_names", "function_purpose"],
+      "properties": {
+        "control_flow": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "制御フロー解析の確信度"
+        },
+        "data_types": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "データ型推論の確信度"
+        },
+        "variable_names": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "変数名の確信度"
+        },
+        "function_purpose": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "関数目的推定の確信度"
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["optimizations_applied", "analysis_time_ms", "cache_hit"],
+      "properties": {
+        "optimizations_applied": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "適用された最適化ルール一覧"
+        },
+        "analysis_time_ms": {
+          "type": "number",
+          "minimum": 0.0,
+          "description": "解析時間（ミリ秒）"
+        },
+        "cache_hit": {
+          "type": "boolean",
+          "description": "キャッシュヒットの有無"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "BasicBlock": {
+      "type": "object",
+      "required": ["id", "address", "size", "ops", "successors", "predecessors"],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "ブロックID"
+        },
+        "address": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "ブロック開始アドレス"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "ブロックサイズ（バイト）"
+        },
+        "ops": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PcodeOp"
+          },
+          "description": "P-code操作の配列"
+        },
+        "successors": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": "後続ブロックのID一覧"
+        },
+        "predecessors": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": "先行ブロックのID一覧"
+        }
+      }
+    },
+    "PcodeOp": {
+      "type": "object",
+      "required": ["opcode", "inputs", "address"],
+      "properties": {
+        "opcode": {
+          "type": "string",
+          "description": "P-code命令（OpCodeのDebug形式）",
+          "examples": ["IntAdd", "IntSub", "Branch", "CBranch", "Return"]
+        },
+        "output": {
+          "oneOf": [
+            {"$ref": "#/definitions/Varnode"},
+            {"type": "null"}
+          ],
+          "description": "出力Varnode（なければnull）"
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Varnode"
+          },
+          "description": "入力Varnodeの配列"
+        },
+        "address": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "命令アドレス"
+        }
+      }
+    },
+    "Varnode": {
+      "type": "object",
+      "required": ["space", "offset", "size"],
+      "properties": {
+        "space": {
+          "type": "string",
+          "enum": ["register", "const", "unique", "ram", "stack"],
+          "description": "アドレス空間"
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "オフセット"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "サイズ（バイト）"
+        },
+        "name": {
+          "type": "string",
+          "description": "レジスタ名等（存在する場合）"
+        }
+      }
+    },
+    "DefUseChain": {
+      "type": "object",
+      "required": ["definition", "uses"],
+      "properties": {
+        "definition": {
+          "$ref": "#/definitions/OpLocation",
+          "description": "定義操作の位置"
+        },
+        "uses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OpLocation"
+          },
+          "description": "使用操作の位置一覧"
+        }
+      }
+    },
+    "OpLocation": {
+      "type": "object",
+      "required": ["block", "op"],
+      "properties": {
+        "block": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "ブロックID"
+        },
+        "op": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "ブロック内の操作インデックス"
+        }
+      }
+    },
+    "VarnodeTypeInfo": {
+      "type": "object",
+      "required": ["varnode", "inferred_type", "confidence"],
+      "properties": {
+        "varnode": {
+          "$ref": "#/definitions/Varnode",
+          "description": "対象Varnode"
+        },
+        "inferred_type": {
+          "type": "string",
+          "description": "推論された型（例: int64, float32, ptr）"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "型推論の確信度"
+        }
+      }
+    },
+    "FunctionSymbol": {
+      "type": "object",
+      "required": ["address", "name", "source", "confidence"],
+      "properties": {
+        "address": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "関数アドレス"
+        },
+        "name": {
+          "type": "string",
+          "description": "関数名"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["DWARF", "PDB", "export", "inferred"],
+          "description": "シンボル情報のソース"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "シンボルの確信度"
+        }
+      }
+    },
+    "VariableSymbol": {
+      "type": "object",
+      "required": ["address", "name", "source"],
+      "properties": {
+        "address": {
+          "type": "string",
+          "pattern": "^0x[0-9a-fA-F]+$",
+          "description": "変数アドレス"
+        },
+        "name": {
+          "type": "string",
+          "description": "変数名"
+        },
+        "type": {
+          "type": "string",
+          "description": "変数の型（存在する場合）"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["DWARF", "PDB", "export", "inferred"],
+          "description": "シンボル情報のソース"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "format_version": "1.0",
+      "analysis_timestamp": "2025-12-18T10:30:00Z",
+      "binary": {
+        "path": "/path/to/binary.exe",
+        "architecture": "x86-64",
+        "format": "PE"
+      },
+      "function": {
+        "address": "0x140001000",
+        "size": 245,
+        "entry_point": "0x140001000",
+        "exit_points": ["0x140001010", "0x140001018"],
+        "name": {
+          "known": true,
+          "value": "process_player_data",
+          "source": "DWARF"
+        }
+      },
+      "cfg": {
+        "entry_block": 0,
+        "blocks": []
+      },
+      "confidence": {
+        "control_flow": 1.0,
+        "data_types": 0.85,
+        "variable_names": 0.9,
+        "function_purpose": 0.6
+      },
+      "metadata": {
+        "optimizations_applied": ["RuleTermOrder", "RuleConstantFold"],
+        "analysis_time_ms": 12.3,
+        "cache_hit": false
+      }
+    }
+  ]
+}

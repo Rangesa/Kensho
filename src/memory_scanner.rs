@@ -1,4 +1,4 @@
-/// War Thunder動的解析 - メモリスキャナー
+﻿/// War Thunder動的解析 - メモリスキャナー
 /// プロセスメモリからゲームデータ構造を探索
 
 #[cfg(windows)]
@@ -185,14 +185,14 @@ impl MemoryScanner {
         Ok(buffer)
     }
 
-    /// パターンマッチング（バイトシーケンス検索）
+    /// パターンマッチング（バイトシーケンス探索）
     #[cfg(windows)]
     pub fn scan_pattern(&self, pattern: &[u8], mask: Option<&[bool]>) -> Result<Vec<usize>> {
         let regions = self.enumerate_regions()?;
         let mut results = Vec::new();
 
         for region in regions {
-            // 大きすぎるリージョンはスキップ（100MB以上）
+            // 大きすぎるリージョンはスキップ（例: 100MB以上）
             if region.size > 100 * 1024 * 1024 {
                 continue;
             }

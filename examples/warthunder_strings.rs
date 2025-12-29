@@ -1,24 +1,22 @@
-/// War Thunder aces.exe - 文字列抽出
-/// ゲーム内部構造の手がかりを探す
-
+﻿/// War Thunder aces.exe - 譁・ｭ怜・謚ｽ蜃ｺ
+/// 繧ｲ繝ｼ繝蜀・Κ讒矩縺ｮ謇九′縺九ｊ繧呈爾縺・
 use anyhow::Result;
 use goblin::pe::PE;
 use std::collections::HashSet;
 
 fn main() -> Result<()> {
-    println!("🔍 War Thunder String Analysis");
+    println!("剥 War Thunder String Analysis");
     println!("{}", "=".repeat(80));
 
     let binary_path = r"C:\Users\asdas\AppData\Local\WarThunder\win64\aces.exe";
     let binary_data = std::fs::read(binary_path)?;
 
-    println!("\n📂 Binary: {} ({} MB)", binary_path, binary_data.len() / 1_000_000);
+    println!("\n唐 Binary: {} ({} MB)", binary_path, binary_data.len() / 1_000_000);
 
-    // PEファイルをパース
+    // PE繝輔ぃ繧､繝ｫ繧偵ヱ繝ｼ繧ｹ
     let pe = PE::parse(&binary_data)?;
 
-    // .rdataセクションを探す（文字列が格納されている可能性が高い）
-    let rdata_section = pe.sections.iter().find(|s| {
+    // .rdata繧ｻ繧ｯ繧ｷ繝ｧ繝ｳ繧呈爾縺呻ｼ域枚蟄怜・縺梧ｼ邏阪＆繧後※縺・ｋ蜿ｯ閭ｽ諤ｧ縺碁ｫ倥＞・・    let rdata_section = pe.sections.iter().find(|s| {
         let name = String::from_utf8_lossy(&s.name);
         name.starts_with(".rdata") || name.starts_with(".rodata")
     });
@@ -28,17 +26,17 @@ fn main() -> Result<()> {
         let size = section.size_of_raw_data as usize;
         let end = std::cmp::min(start + size, binary_data.len());
 
-        println!("\n📋 .rdata section found:");
+        println!("\n搭 .rdata section found:");
         println!("   Offset: 0x{:X}", start);
         println!("   Size: 0x{:X} ({} MB)", size, size / 1_000_000);
 
-        // 文字列を抽出
+        // 譁・ｭ怜・繧呈歓蜃ｺ
         let mut strings = Vec::new();
         extract_strings(&binary_data[start..end], 8, &mut strings);
 
-        println!("\n🔤 Found {} strings (min length: 8)", strings.len());
+        println!("\n筈 Found {} strings (min length: 8)", strings.len());
 
-        // 興味深いキーワードでフィルタリング
+        // 闊亥袖豺ｱ縺・く繝ｼ繝ｯ繝ｼ繝峨〒繝輔ぅ繝ｫ繧ｿ繝ｪ繝ｳ繧ｰ
         let keywords = [
             "player", "vehicle", "tank", "aircraft", "weapon", "damage",
             "engine", "module", "crew", "ammo", "armor", "penetration",
@@ -51,7 +49,7 @@ fn main() -> Result<()> {
             "config", "settings", "data", "save", "load"
         ];
 
-        println!("\n🎯 Interesting strings:");
+        println!("\n識 Interesting strings:");
         let mut found_count = 0;
         let mut categories: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
 
@@ -68,7 +66,7 @@ fn main() -> Result<()> {
             }
         }
 
-        // カテゴリごとに表示
+        // 繧ｫ繝・ざ繝ｪ縺斐→縺ｫ陦ｨ遉ｺ
         let mut sorted_categories: Vec<_> = categories.iter().collect();
         sorted_categories.sort_by_key(|(k, v)| (-(v.len() as i32), k.as_str()));
 
@@ -82,13 +80,12 @@ fn main() -> Result<()> {
             }
         }
 
-        println!("\n📊 Summary:");
+        println!("\n投 Summary:");
         println!("   Total strings: {}", strings.len());
         println!("   Interesting strings: {}", found_count);
         println!("   Categories found: {}", categories.len());
 
-        // クラス名っぽいものを探す（大文字始まり、CamelCase）
-        println!("\n🏗️  Potential class/struct names:");
+        // 繧ｯ繝ｩ繧ｹ蜷阪▲縺ｽ縺・ｂ縺ｮ繧呈爾縺呻ｼ亥､ｧ譁・ｭ怜ｧ九∪繧翫，amelCase・・        println!("\n女・・ Potential class/struct names:");
         let mut class_names = HashSet::new();
         for s in &strings {
             if is_likely_class_name(s) {
@@ -107,11 +104,10 @@ fn main() -> Result<()> {
         println!("\n   Found {} potential class names", class_names.len());
 
     } else {
-        println!("\n⚠️  .rdata section not found!");
+        println!("\n笞・・ .rdata section not found!");
     }
 
-    // .dataセクションも確認
-    let data_section = pe.sections.iter().find(|s| {
+    // .data繧ｻ繧ｯ繧ｷ繝ｧ繝ｳ繧ら｢ｺ隱・    let data_section = pe.sections.iter().find(|s| {
         let name = String::from_utf8_lossy(&s.name);
         name.starts_with(".data")
     });
@@ -121,7 +117,7 @@ fn main() -> Result<()> {
         let size = section.size_of_raw_data as usize;
         let end = std::cmp::min(start + size, binary_data.len());
 
-        println!("\n📋 .data section:");
+        println!("\n搭 .data section:");
         let mut strings = Vec::new();
         extract_strings(&binary_data[start..end], 10, &mut strings);
         println!("   Found {} strings (min length: 10)", strings.len());
@@ -132,7 +128,7 @@ fn main() -> Result<()> {
     }
 
     println!("\n{}", "=".repeat(80));
-    println!("✅ String analysis complete!");
+    println!("笨・String analysis complete!");
 
     Ok(())
 }
@@ -159,18 +155,16 @@ fn is_likely_class_name(s: &str) -> bool {
         return false;
     }
 
-    // 最初の文字が大文字
-    let first_char = s.chars().next().unwrap();
+    // 譛蛻昴・譁・ｭ励′螟ｧ譁・ｭ・    let first_char = s.chars().next().unwrap();
     if !first_char.is_uppercase() {
         return false;
     }
 
-    // CamelCaseっぽい（大文字が2個以上）
-    let uppercase_count = s.chars().filter(|c| c.is_uppercase()).count();
+    // CamelCase縺｣縺ｽ縺・ｼ亥､ｧ譁・ｭ励′2蛟倶ｻ･荳奇ｼ・    let uppercase_count = s.chars().filter(|c| c.is_uppercase()).count();
     if uppercase_count < 2 {
         return false;
     }
 
-    // 英数字とアンダースコアのみ
+    // 闍ｱ謨ｰ蟄励→繧｢繝ｳ繝繝ｼ繧ｹ繧ｳ繧｢縺ｮ縺ｿ
     s.chars().all(|c| c.is_alphanumeric() || c == '_')
 }

@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+﻿use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -8,8 +8,8 @@ use std::sync::Mutex;
 
 /// Ghidra Headless連携モジュール
 ///
-/// Ghidraの高品質デコンパイラをサブプロセスで呼び出す
-/// キャッシュ機構により2回目以降は即座に結果を返す
+/// Ghidraの高品質デコンパイラをサブプロセスで呼び出し、
+/// キャッシュ機構により2回目以降は即座に結果を返す。
 pub struct GhidraHeadless {
     ghidra_path: PathBuf,
     cache_dir: PathBuf,
@@ -60,7 +60,7 @@ impl GhidraHeadless {
     /// * `function_address` - 関数のアドレス
     ///
     /// # Returns
-    /// デコンパイルされたC疑似コード
+    /// デコンパイルされたC擬似コード
     pub fn decompile(&self, binary_path: &str, function_address: u64) -> Result<String> {
         let cache_key = format!("{}_{:x}", binary_path, function_address);
 

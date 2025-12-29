@@ -1,0 +1,37 @@
+# Rust
+/target
+Cargo.lock
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.sum
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project specific
+*.png
+*.xml
+*.zip
+*.txt
+*.exe
+*.bin
+build_errors.txt
+cargo_check_result.txt
+extraction_output.txt
+extracted_manifest.xml
+extracted_image_*.png
+nul
+/temp/WoWoWoWoW.exe
+/temp/question.exe
+/source_dump/
+/cache/

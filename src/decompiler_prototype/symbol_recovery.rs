@@ -1,23 +1,21 @@
-/// シンボル名復元システム
-///
-/// PEファイルのエクスポートテーブル、インポートテーブルから
-/// 関数名・変数名を抽出して復元
+/// Symbol recovery from PE binaries
+/// Extracts function names and addresses from export tables
 
 use std::collections::HashMap;
 use anyhow::Result;
 
-/// シンボル情報
+/// Represents a symbol (function or variable)
 #[derive(Debug, Clone)]
 pub struct Symbol {
-    /// シンボル名
+    /// Symbol name
     pub name: String,
-    /// 仮想アドレス
+    /// Symbol address
     pub address: u64,
-    /// シンボルの種類
+    /// Symbol kind
     pub kind: SymbolKind,
 }
 
-/// シンボルの種類
+/// Type of symbol
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum SymbolKind {
     Function,
@@ -26,16 +24,16 @@ pub enum SymbolKind {
     Export,
 }
 
-/// シンボルテーブル
+/// Symbol table for managing program symbols
 pub struct SymbolTable {
-    /// アドレス → シンボル のマッピング
+    /// Address to symbol mapping
     symbols: HashMap<u64, Symbol>,
-    /// 名前 → アドレス のマッピング（逆引き用）
+    /// Name to address mapping
     names: HashMap<String, u64>,
 }
 
 impl SymbolTable {
-    /// 新しいシンボルテーブルを作成
+    /// Create new empty symbol table
     pub fn new() -> Self {
         Self {
             symbols: HashMap::new(),
@@ -43,21 +41,20 @@ impl SymbolTable {
         }
     }
 
-    /// PEファイルからシンボルを抽出
-    ///
-    /// PEフォーマットのエクスポートテーブルを解析してシンボル情報を取得
-    pub fn load_from_pe(&mut self, binary_data: &[u8]) -> Result<usize> {
-        // PE署名チェック
+    /// Parse PE binary and extract exported symbols
+    /// Returns number of symbols found
+    pub fn parse_pe_exports(&mut self, binary_data: &[u8]) -> Result<usize> {
+        // PE format check
         if binary_data.len() < 0x40 {
             return Ok(0);
         }
 
-        // DOSヘッダー確認
+        // DOS header verification
         if &binary_data[0..2] != b"MZ" {
             return Ok(0);
         }
 
-        // PE headerオフセット取得
+        // Get PE header offset
         let pe_offset = u32::from_le_bytes([
             binary_data[0x3C],
             binary_data[0x3D],
@@ -69,12 +66,12 @@ impl SymbolTable {
             return Ok(0);
         }
 
-        // PE署名確認
+        // PE signature verification
         if &binary_data[pe_offset..pe_offset + 4] != b"PE\0\0" {
             return Ok(0);
         }
 
-        // COFFヘッダーとOptionalヘッダーを解析
+        // Parse COFF header and Optional header
         let coff_header_offset = pe_offset + 4;
         let optional_header_offset = coff_header_offset + 20;
 
@@ -82,7 +79,7 @@ impl SymbolTable {
             return Ok(0);
         }
 
-        // OptionalヘッダーのMagic値で64bit/32bitを判定
+        // Determine 64bit/32bit from Optional header Magic value
         let magic = u16::from_le_bytes([
             binary_data[optional_header_offset],
             binary_data[optional_header_offset + 1],
@@ -91,7 +88,7 @@ impl SymbolTable {
         let is_64bit = magic == 0x020B; // PE32+
         let _is_32bit = magic == 0x010B; // PE32
 
-        // エクスポートテーブルのRVA（相対仮想アドレス）を取得
+        // Get Export Table RVA (Relative Virtual Address)
         let export_table_offset = if is_64bit {
             optional_header_offset + 112
         } else {
@@ -117,31 +114,31 @@ impl SymbolTable {
         ]);
 
         if export_rva == 0 || export_size == 0 {
-            return Ok(0); // エクスポートテーブルなし
+            return Ok(0); // No export table
         }
 
-        // RVAをファイルオフセットに変換（簡易版）
+        // Convert RVA to file offset (simplified)
         let export_offset = self.rva_to_offset(binary_data, export_rva)?;
 
-        // エクスポートディレクトリテーブルを解析
+        // Parse export directory table
         self.parse_export_directory(binary_data, export_offset as usize)
     }
 
-    /// RVA（相対仮想アドレス）をファイルオフセットに変換
+    /// Convert RVA to file offset
     fn rva_to_offset(&self, binary_data: &[u8], rva: u32) -> Result<u32> {
-        // 簡易実装: .textセクションを仮定（実際にはセクションテーブルを解析すべき）
-        // 通常.textは0x1000から始まり、ファイルオフセットは0x400
+        // Simplified: assume .text section (should parse section table in reality)
+        // Typically .text starts at RVA 0x1000, file offset 0x400
         let text_rva_start = 0x1000u32;
         let text_file_offset = 0x400u32;
 
         if rva >= text_rva_start {
             Ok(rva - text_rva_start + text_file_offset)
         } else {
-            Ok(rva) // ヘッダー領域
+            Ok(rva) // Header area
         }
     }
 
-    /// エクスポートディレクトリテーブルを解析
+    /// Parse export directory table
     fn parse_export_directory(&mut self, binary_data: &[u8], offset: usize) -> Result<usize> {
         if offset + 40 > binary_data.len() {
             return Ok(0);
@@ -193,9 +190,9 @@ impl SymbolTable {
 
         let mut count = 0;
 
-        // 各エクスポート関数を処理
+        // Process each exported function
         for i in 0..std::cmp::min(num_names, 1000) {
-            // 名前RVAを取得
+            // Get name RVA
             let name_rva_offset = names_offset + i * 4;
             if name_rva_offset + 4 > binary_data.len() {
                 break;
@@ -208,10 +205,10 @@ impl SymbolTable {
                 binary_data[name_rva_offset + 3],
             ]);
 
-            // 名前文字列を読み取り
+            // Read name string
             let name_offset = self.rva_to_offset(binary_data, name_rva)? as usize;
             if let Some(name) = self.read_cstring(binary_data, name_offset) {
-                // Ordinalを取得
+                // Get ordinal
                 let ordinal_offset = ordinals_offset + i * 2;
                 if ordinal_offset + 2 > binary_data.len() {
                     break;
@@ -222,7 +219,7 @@ impl SymbolTable {
                     binary_data[ordinal_offset + 1],
                 ]) as usize;
 
-                // 関数アドレスを取得
+                // Get function address
                 let func_rva_offset = functions_offset + ordinal * 4;
                 if func_rva_offset + 4 > binary_data.len() {
                     break;
@@ -235,11 +232,11 @@ impl SymbolTable {
                     binary_data[func_rva_offset + 3],
                 ]);
 
-                // イメージベースを加算（通常0x140000000 for 64bit）
+                // Add image base (typically 0x140000000 for 64bit)
                 let image_base = 0x140000000u64;
                 let func_address = image_base + func_rva as u64;
 
-                // シンボルを追加
+                // Add symbol
                 self.add_symbol(Symbol {
                     name: name.clone(),
                     address: func_address,
@@ -253,7 +250,7 @@ impl SymbolTable {
         Ok(count)
     }
 
-    /// C文字列を読み取り
+    /// Read null-terminated C string from binary data
     fn read_cstring(&self, data: &[u8], offset: usize) -> Option<String> {
         if offset >= data.len() {
             return None;
@@ -267,33 +264,33 @@ impl SymbolTable {
         String::from_utf8(data[offset..end].to_vec()).ok()
     }
 
-    /// シンボルを追加
+    /// Add a symbol to the table
     pub fn add_symbol(&mut self, symbol: Symbol) {
         self.names.insert(symbol.name.clone(), symbol.address);
         self.symbols.insert(symbol.address, symbol);
     }
 
-    /// アドレスからシンボルを取得
+    /// Get symbol by address
     pub fn get_symbol(&self, address: u64) -> Option<&Symbol> {
         self.symbols.get(&address)
     }
 
-    /// 名前からアドレスを取得
+    /// Get address by name
     pub fn get_address(&self, name: &str) -> Option<u64> {
         self.names.get(name).copied()
     }
 
-    /// すべてのシンボルを取得
+    /// Get all symbols
     pub fn get_all_symbols(&self) -> Vec<&Symbol> {
         self.symbols.values().collect()
     }
 
-    /// シンボル数を取得
+    /// Get number of symbols
     pub fn len(&self) -> usize {
         self.symbols.len()
     }
 
-    /// シンボルが空かどうか
+    /// Check if symbol table is empty
     pub fn is_empty(&self) -> bool {
         self.symbols.is_empty()
     }

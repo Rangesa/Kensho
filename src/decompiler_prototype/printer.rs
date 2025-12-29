@@ -1,10 +1,13 @@
-/// C言語疑似コード出力
-/// P-codeからシンプルなC言語風の出力を生成
+
+
+
+
 
 use super::pcode::{AddressSpace, OpCode, PcodeOp, Varnode};
 use super::cfg::ControlFlowGraph;
 
-/// シンプルなC言語プリンター
+
+
 pub struct SimplePrinter {
     indent_level: usize,
 }
@@ -14,16 +17,18 @@ impl SimplePrinter {
         Self { indent_level: 0 }
     }
 
-    /// インデント文字列を生成
+
+
     fn indent(&self) -> String {
         "  ".repeat(self.indent_level)
     }
 
-    /// Varnodeを変数名に変換
+
+
     fn varnode_to_string(&self, vn: &Varnode) -> String {
         match vn.space {
             AddressSpace::Register => {
-                // レジスタを認識可能な名前に変換
+
                 match vn.offset {
                     0 => "rax".to_string(),
                     8 => "rcx".to_string(),
@@ -45,7 +50,8 @@ impl SimplePrinter {
         }
     }
 
-    /// P-code命令をC言語式に変換
+
+
     fn pcode_to_c_expr(&self, op: &PcodeOp) -> Option<String> {
         let output = op.output.as_ref()?;
         let output_str = self.varnode_to_string(output);
@@ -179,7 +185,8 @@ impl SimplePrinter {
         Some(format!("{} = {};", output_str, expr))
     }
 
-    /// P-code命令を文に変換
+
+
     fn pcode_to_statement(&self, op: &PcodeOp) -> String {
         match op.opcode {
             OpCode::Return => {
@@ -236,7 +243,8 @@ impl SimplePrinter {
         }
     }
 
-    /// P-code列をC言語疑似コードに変換
+
+
     pub fn print_pcodes(&mut self, pcodes: &[PcodeOp]) -> String {
         let mut output = String::new();
 
@@ -254,7 +262,8 @@ impl SimplePrinter {
         output
     }
 
-    /// 制御フローグラフをC言語疑似コードに変換
+
+
     pub fn print_cfg(&mut self, cfg: &ControlFlowGraph) -> String {
         let mut output = String::new();
 
@@ -284,7 +293,7 @@ impl SimplePrinter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::decompiler_prototype::x86_64::example_translation;
+    use crate::decompiler_prototype::test_utils::example_translation;
 
     #[test]
     fn test_simple_print() {

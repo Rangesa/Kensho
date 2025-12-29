@@ -1,5 +1,6 @@
-/// Capstone逆アセンブラからP-codeへの自動変換
-/// 実際のバイナリを解析してP-codeを生成する
+
+
+
 
 use super::pcode::*;
 use super::x86_64::{X86Decoder, X86Register};
@@ -8,14 +9,16 @@ use capstone::prelude::*;
 use capstone::arch::x86::X86OperandType;
 use capstone::arch::x86::X86Reg;
 
-/// Capstone命令をP-codeに変換するトランスレータ
+
+
 pub struct CapstoneTranslator {
     decoder: X86Decoder,
     cs: Capstone,
 }
 
 impl CapstoneTranslator {
-    /// 新しいトランスレータを作成
+
+
     pub fn new() -> Result<Self> {
         let cs = Capstone::new()
             .x86()
@@ -30,21 +33,22 @@ impl CapstoneTranslator {
         })
     }
 
-    /// バイナリデータをP-codeに変換
+
+
     pub fn translate(&mut self, code: &[u8], base_address: u64, max_instructions: usize) -> Result<Vec<PcodeOp>> {
-        // Step 1: 逆アセンブルして必要な情報を全部収集
+        // Step 1: Disassemble and collect info
         let insns = self.cs
             .disasm_count(code, base_address, max_instructions)
             .map_err(|e| anyhow!("Disassembly failed: {}", e))?;
 
-        // 命令情報とオペランド情報を収集
+        // Collect instruction and operand info
         let mut insn_data = Vec::new();
         for insn in insns.iter() {
             let addr = insn.address();
             let mnemonic = insn.mnemonic().unwrap_or("???").to_string();
             let op_str = insn.op_str().unwrap_or("").to_string();
 
-            // 詳細情報を取得してオペランドを収集
+            // Get detail info and operands
             let operands = if let Ok(detail) = self.cs.insn_detail(&insn) {
                 let arch_detail = detail.arch_detail();
                 if let Some(x86_detail) = arch_detail.x86() {
@@ -59,10 +63,10 @@ impl CapstoneTranslator {
             insn_data.push((addr, mnemonic, op_str, operands));
         }
 
-        // insnsをドロップ（borrowを解放）
+        // Drop insns (release borrow)
         drop(insns);
 
-        // Step 2: 収集した情報を使ってP-codeに変換
+        // Step 2: Convert to P-code using collected info
         let mut pcodes = Vec::new();
         for (addr, mnemonic, op_str, operands) in insn_data {
             match self.translate_from_operands(&mnemonic, &op_str, &operands, addr) {
@@ -76,7 +80,8 @@ impl CapstoneTranslator {
         Ok(pcodes)
     }
 
-    /// オペランド情報からP-codeに変換
+
+
     fn translate_from_operands(
         &mut self,
         mnemonic: &str,
@@ -190,7 +195,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// 命令を直接P-codeに変換（詳細情報から）
+
+
     fn translate_instruction_direct(
         &mut self,
         detail_result: &Result<capstone::InsnDetail, capstone::Error>,
@@ -205,7 +211,7 @@ impl CapstoneTranslator {
 
         let operands: Vec<_> = x86_detail.operands().collect();
 
-        // ここから元のtranslate_instructionのmatch文と同じ
+        // Match same as translate_instruction below
         match mnemonic.to_lowercase().as_str() {
             // ===== データ移動命令 =====
             "mov" => self.translate_mov(&operands, address),
@@ -286,7 +292,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// 単一の命令をP-codeに変換
+
+
     fn translate_instruction(
         &mut self,
         insn: &capstone::Insn,
@@ -294,7 +301,7 @@ impl CapstoneTranslator {
         mnemonic: &str,
         op_str: &str,
     ) -> Result<Vec<PcodeOp>> {
-        // 命令の詳細情報を取得
+        // Get instruction details
         let detail = self.cs.insn_detail(insn)
             .map_err(|e| anyhow!("Failed to get instruction detail: {}", e))?;
 
@@ -386,7 +393,8 @@ impl CapstoneTranslator {
 
     // ===== 変換ヘルパー =====
 
-    /// mov命令の変換
+
+
     fn translate_mov(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         if operands.len() != 2 {
             return Err(anyhow!("mov requires 2 operands"));
@@ -437,7 +445,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// movzx命令の変換
+
+
     fn translate_movzx(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         if operands.len() != 2 {
             return Err(anyhow!("movzx requires 2 operands"));
@@ -470,7 +479,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// movsx命令の変換
+
+
     fn translate_movsx(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         if operands.len() != 2 {
             return Err(anyhow!("movsx requires 2 operands"));
@@ -503,7 +513,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// lea命令の変換
+
+
     fn translate_lea(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         if operands.len() != 2 {
             return Err(anyhow!("lea requires 2 operands"));
@@ -523,7 +534,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// xchg命令の変換
+
+
     fn translate_xchg(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         if operands.len() != 2 {
             return Err(anyhow!("xchg requires 2 operands"));
@@ -539,7 +551,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// push命令の変換
+
+
     fn translate_push(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         if operands.is_empty() {
             return Err(anyhow!("push requires an operand"));
@@ -557,7 +570,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// pop命令の変換
+
+
     fn translate_pop(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         if operands.is_empty() {
             return Err(anyhow!("pop requires an operand"));
@@ -571,9 +585,10 @@ impl CapstoneTranslator {
         }
     }
 
-    /// enter命令の変換
+
+
     fn translate_enter(&mut self, op_str: &str, address: u64) -> Result<Vec<PcodeOp>> {
-        // "0x20, 0" のような形式をパース
+        // Parse format like "0x20, 0"
         let parts: Vec<&str> = op_str.split(',').map(|s| s.trim()).collect();
         if parts.len() != 2 {
             return Err(anyhow!("enter requires 2 operands"));
@@ -584,7 +599,8 @@ impl CapstoneTranslator {
         Ok(self.decoder.decode_enter(size, level, address))
     }
 
-    /// 二項算術演算（add, sub）
+
+
     fn translate_binary_arithmetic(
         &mut self,
         operands: &[capstone::arch::x86::X86Operand],
@@ -621,7 +637,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// 二項論理演算（and, or, xor）
+
+
     fn translate_binary_logic(
         &mut self,
         operands: &[capstone::arch::x86::X86Operand],
@@ -660,7 +677,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// inc命令
+
+
     fn translate_inc(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         use capstone::arch::x86::X86OperandType;
 
@@ -685,7 +703,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// dec命令
+
+
     fn translate_dec(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         use capstone::arch::x86::X86OperandType;
 
@@ -710,7 +729,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// neg命令
+
+
     fn translate_neg(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         if operands.is_empty() {
             return Err(anyhow!("neg requires an operand"));
@@ -725,7 +745,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// not命令
+
+
     fn translate_not(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         if operands.is_empty() {
             return Err(anyhow!("not requires an operand"));
@@ -740,7 +761,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// mul命令
+
+
     fn translate_mul(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         if operands.is_empty() {
             return Err(anyhow!("mul requires an operand"));
@@ -755,7 +777,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// imul命令
+
+
     fn translate_imul(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         if operands.is_empty() {
             return Err(anyhow!("imul requires at least one operand"));
@@ -801,7 +824,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// div命令
+    
+
     fn translate_div(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         if operands.is_empty() {
             return Err(anyhow!("div requires an operand"));
@@ -816,7 +840,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// idiv命令
+    
+
     fn translate_idiv(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         if operands.is_empty() {
             return Err(anyhow!("idiv requires an operand"));
@@ -831,7 +856,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// シフト命令（shl, shr, sar）
+    
+
     fn translate_shift(
         &mut self,
         operands: &[capstone::arch::x86::X86Operand],
@@ -872,7 +898,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// cmp命令
+    
+
     fn translate_cmp(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         use capstone::arch::x86::X86OperandType;
 
@@ -911,7 +938,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// test命令
+    /// [Comment removed due to encoding issues]
+
     fn translate_test(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         if operands.len() != 2 {
             return Err(anyhow!("test requires 2 operands"));
@@ -935,7 +963,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// jmp命令
+    
+
     fn translate_jmp(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         use capstone::arch::x86::X86OperandType;
 
@@ -966,7 +995,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// call命令
+    
+
     fn translate_call(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         use capstone::arch::x86::X86OperandType;
 
@@ -997,7 +1027,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// ret命令
+    
+
     fn translate_ret(&mut self, op_str: &str, address: u64) -> Result<Vec<PcodeOp>> {
         if op_str.is_empty() {
             Ok(self.decoder.decode_ret(address))
@@ -1007,7 +1038,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// 条件分岐命令の汎用変換
+    /// [Comment removed due to encoding issues]
+
     fn translate_jcc<F>(&mut self, decode_fn: F, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>>
     where
         F: Fn(&mut X86Decoder, u64, u64) -> Vec<PcodeOp>,
@@ -1023,7 +1055,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// SETcc命令の汎用変換
+    
+
     fn translate_setcc<F>(&mut self, decode_fn: F, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>>
     where
         F: Fn(&mut X86Decoder, X86Register, u64) -> Vec<PcodeOp>,
@@ -1040,12 +1073,13 @@ impl CapstoneTranslator {
         }
     }
 
-    /// Capstoneレジスタ番号をX86Registerに変換
+    
+
     fn capstone_reg_to_x86(&self, reg: RegId) -> Result<X86Register> {
-        // Capstoneのレジスタ番号からX86Registerへのマッピング
+        // Map Capstone register number to X86Register
         let reg_id = reg.0 as u32;
 
-        // x86_64レジスタのマッピング
+        // x86_64 register mapping
         match reg_id {
             x if x == X86Reg::X86_REG_RAX as u32 || x == X86Reg::X86_REG_EAX as u32 || x == X86Reg::X86_REG_AX as u32 || x == X86Reg::X86_REG_AL as u32 => Ok(X86Register::RAX),
             x if x == X86Reg::X86_REG_RCX as u32 || x == X86Reg::X86_REG_ECX as u32 || x == X86Reg::X86_REG_CX as u32 || x == X86Reg::X86_REG_CL as u32 => Ok(X86Register::RCX),
@@ -1064,7 +1098,7 @@ impl CapstoneTranslator {
             x if x == X86Reg::X86_REG_R14 as u32 || x == X86Reg::X86_REG_R14D as u32 || x == X86Reg::X86_REG_R14W as u32 || x == X86Reg::X86_REG_R14B as u32 => Ok(X86Register::R14),
             x if x == X86Reg::X86_REG_R15 as u32 || x == X86Reg::X86_REG_R15D as u32 || x == X86Reg::X86_REG_R15W as u32 || x == X86Reg::X86_REG_R15B as u32 => Ok(X86Register::R15),
             x if x == X86Reg::X86_REG_RIP as u32 || x == X86Reg::X86_REG_EIP as u32 => Ok(X86Register::RIP),
-            // SSE/AVX XMMレジスタ
+            // SSE/AVX XMM registers
             x if x == X86Reg::X86_REG_XMM0 as u32 => Ok(X86Register::XMM0),
             x if x == X86Reg::X86_REG_XMM1 as u32 => Ok(X86Register::XMM1),
             x if x == X86Reg::X86_REG_XMM2 as u32 => Ok(X86Register::XMM2),
@@ -1085,7 +1119,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// メモリアドレスの計算
+    
+
     fn compute_mem_address(
         &mut self,
         mem: &capstone::arch::x86::X86OpMem,
@@ -1109,7 +1144,7 @@ impl CapstoneTranslator {
         Ok(self.decoder.compute_memory_address(base, index, scale, displacement, address))
     }
 
-    // ===== アトミック命令の翻訳 =====
+    // ===== Translate Atomic Instructions =====
 
     /// lock add [memory], imm
     fn translate_lock_add(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
@@ -1119,13 +1154,13 @@ impl CapstoneTranslator {
             return Err(anyhow!("lock add requires 2 operands"));
         }
 
-        // 第1オペランド: メモリ [base + disp]
+        // 1st operand: Mem [base + disp]
         let mem = match &operands[0].op_type {
             X86OperandType::Mem(mem) => mem,
             _ => return Err(anyhow!("lock add first operand must be memory")),
         };
 
-        // 第2オペランド: 即値
+        // 2nd operand: Imm
         let imm = match operands[1].op_type {
             X86OperandType::Imm(imm) => imm,
             _ => return Err(anyhow!("lock add second operand must be immediate")),
@@ -1146,13 +1181,13 @@ impl CapstoneTranslator {
             return Err(anyhow!("lock xadd requires 2 operands"));
         }
 
-        // 第1オペランド: メモリ
+        // 1st operand: Mem
         let mem = match &operands[0].op_type {
             X86OperandType::Mem(mem) => mem,
             _ => return Err(anyhow!("lock xadd first operand must be memory")),
         };
 
-        // 第2オペランド: レジスタ
+        // 2nd operand: Reg
         let src_reg = match operands[1].op_type {
             X86OperandType::Reg(reg_id) => self.capstone_reg_to_x86(reg_id)?,
             _ => return Err(anyhow!("lock xadd second operand must be register")),
@@ -1173,7 +1208,7 @@ impl CapstoneTranslator {
             return Err(anyhow!("lock inc requires 1 operand"));
         }
 
-        // メモリオペランド
+        // Memory operand
         let mem = match &operands[0].op_type {
             X86OperandType::Mem(mem) => mem,
             _ => return Err(anyhow!("lock inc operand must be memory")),
@@ -1194,7 +1229,7 @@ impl CapstoneTranslator {
             return Err(anyhow!("lock dec requires 1 operand"));
         }
 
-        // メモリオペランド
+        // Memory operand
         let mem = match &operands[0].op_type {
             X86OperandType::Mem(mem) => mem,
             _ => return Err(anyhow!("lock dec operand must be memory")),
@@ -1207,7 +1242,7 @@ impl CapstoneTranslator {
         Ok(self.decoder.decode_lock_dec_mem(base_reg, disp, size, address))
     }
 
-    // ===== SSE/AVX命令の翻訳 =====
+    // ===== Translate SSE/AVX Instructions =====
 
     /// movaps xmm, xmm / movaps xmm, [mem] / movaps [mem], xmm
     fn translate_movaps(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
@@ -1244,7 +1279,8 @@ impl CapstoneTranslator {
         }
     }
 
-    /// movups (movapsと同じ実装)
+    
+
     fn translate_movups(&mut self, operands: &[capstone::arch::x86::X86Operand], address: u64) -> Result<Vec<PcodeOp>> {
         self.translate_movaps(operands, address)
     }
@@ -1304,7 +1340,8 @@ impl CapstoneTranslator {
     }
 }
 
-/// 即値文字列をパース
+
+
 fn parse_imm(s: &str) -> Result<i64> {
     let s = s.trim();
 
@@ -1328,7 +1365,7 @@ mod tests {
     fn test_simple_translation() {
         let mut translator = CapstoneTranslator::new().unwrap();
 
-        // 簡単なコードをテスト
+        // Test simple code
         // mov rax, 42; ret
         let code = [0x48, 0xc7, 0xc0, 0x2a, 0x00, 0x00, 0x00, 0xc3];
 
@@ -1359,7 +1396,7 @@ mod tests {
             println!("  0x{:x}: {}", op.address, op);
         }
 
-        // add/subがあることを確認
+        // Check for add/sub
         assert!(pcodes.iter().any(|op| op.opcode == OpCode::IntAdd));
         assert!(pcodes.iter().any(|op| op.opcode == OpCode::IntSub));
     }
@@ -1382,7 +1419,7 @@ mod tests {
             println!("  0x{:x}: {}", op.address, op);
         }
 
-        // 分岐があることを確認
+        // Check for branch
         assert!(pcodes.iter().any(|op| op.opcode == OpCode::CBranch || op.opcode == OpCode::Branch));
     }
 }

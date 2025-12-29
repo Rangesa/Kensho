@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "kensho-mcp": {
+      "type": "stdio",
+      "command": "D:\\Programming\\MCP\\kensho-mcp-go.exe",
+      "args": [],
+      "env": {}
+    }
+  }
+}

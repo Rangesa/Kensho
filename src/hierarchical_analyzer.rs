@@ -1,10 +1,10 @@
-use anyhow::{Context, Result};
+﻿use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use goblin::Object;
 use std::fs;
 use std::path::Path;
 
-/// 階層1: バイナリ全体のサマリー（コンテキスト最小）
+/// 階層1: バイナリ概要（軽量、文脈最小）
 #[derive(Debug, Serialize)]
 pub struct BinarySummary {
     pub file_path: String,
@@ -13,7 +13,7 @@ pub struct BinarySummary {
     pub architecture: String,
     pub entry_point: u64,
     
-    // 統計情報のみ（詳細は返さない）
+    // 統計のみを保持
     pub stats: BinaryStats,
 }
 
@@ -44,7 +44,7 @@ pub struct SectionInfo {
     pub section_type: String,
 }
 
-/// 階層2: 関数一覧（ページネーション + フィルタリング）
+/// 階層2: 関数一覧（ページネーション + フィルタリング対応）
 #[derive(Debug, Serialize)]
 pub struct FunctionList {
     pub total_count: usize,
@@ -61,7 +61,7 @@ pub struct FunctionInfo {
     pub section: Option<String>,
 }
 
-/// 階層2: 文字列一覧（ページネーション + 最小長フィルタ）
+/// 階層2: 文字列一覧（ページネーション + 長さフィルタ対応）
 #[derive(Debug, Serialize)]
 pub struct StringList {
     pub total_count: usize,
@@ -77,7 +77,21 @@ pub struct StringInfo {
     pub length: usize,
 }
 
-/// 階層3: 特定関数の詳細解析
+/// 階層2: インポート一覧
+#[derive(Debug, Serialize)]
+pub struct ImportList {
+    pub total_dll_count: usize,
+    pub total_import_count: usize,
+    pub imports: Vec<ImportInfo>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct ImportInfo {
+    pub dll: String,
+    pub functions: Vec<String>,
+}
+
+/// 階層3: 関数詳細解析（重い、オンデマンド実行）
 #[derive(Debug, Serialize)]
 pub struct FunctionDetail {
     pub address: u64,
@@ -96,9 +110,9 @@ pub struct InstructionInfo {
     pub bytes: String,
 }
 
-/// 階層的解析エンジン
+/// 階層型解析エンジン
 pub struct HierarchicalAnalyzer {
-    // キャッシュ機構（同じバイナリの再解析を避ける）
+    // 解析済データのキャッシュ（将来の拡張用）
     cache: std::collections::HashMap<String, CachedBinaryData>,
 }
 
@@ -120,7 +134,7 @@ impl HierarchicalAnalyzer {
         }
     }
 
-    /// 階層1: サマリー取得（常に軽量）
+    /// 階層1: 概要を取得（常に軽量）
     pub fn get_summary(&mut self, path: &str) -> Result<BinarySummary> {
         let path_obj = Path::new(path);
         let metadata = fs::metadata(path)?;
@@ -137,7 +151,7 @@ impl HierarchicalAnalyzer {
                     _ => "Unknown",
                 };
                 
-                // 統計のみカウント（詳細は取得しない）
+                // 統計のみを計算
                 let function_count = elf.syms.iter()
                     .filter(|s| s.st_type() == 2)
                     .count();
@@ -170,7 +184,7 @@ impl HierarchicalAnalyzer {
                 
                 let stats = BinaryStats {
                     section_count: pe.sections.len(),
-                    function_count: export_count, // PEの場合はエクスポート数を関数数として扱う
+                    function_count: export_count, // PEではエクスポートを関数とみなす（簡易）
                     import_count: pe.imports.len(),
                     export_count,
                     string_count_estimate: self.estimate_string_count(&buffer),
@@ -200,7 +214,7 @@ impl HierarchicalAnalyzer {
         })
     }
 
-    /// 階層2: 関数一覧（ページネーション）
+    /// 階層2: 関数一覧（ページネーション対応）
     pub fn list_functions(
         &mut self,
         path: &str,
@@ -225,7 +239,11 @@ impl HierarchicalAnalyzer {
         // ページネーション
         let start = page * page_size;
         let end = std::cmp::min(start + page_size, total_count);
-        let page_data = filtered[start..end].to_vec();
+        let page_data = if start < total_count {
+            filtered[start..end].to_vec()
+        } else {
+            Vec::new()
+        };
 
         Ok(FunctionList {
             total_count,
@@ -247,7 +265,11 @@ impl HierarchicalAnalyzer {
         let total_count = sections.len();
         let start = page * page_size;
         let end = std::cmp::min(start + page_size, total_count);
-        let page_data = sections[start..end].to_vec();
+        let page_data =  if start < total_count {
+            sections[start..end].to_vec()
+        } else {
+            Vec::new()
+        };
 
         Ok(SectionList {
             total_count,
@@ -257,7 +279,7 @@ impl HierarchicalAnalyzer {
         })
     }
 
-    /// 階層2: 文字列一覧（ページネーション）
+    /// 階層2: 文字列一覧
     pub fn list_strings(
         &mut self,
         path: &str,
@@ -276,7 +298,11 @@ impl HierarchicalAnalyzer {
         let total_count = filtered.len();
         let start = page * page_size;
         let end = std::cmp::min(start + page_size, total_count);
-        let page_data = filtered[start..end].to_vec();
+        let page_data = if start < total_count {
+            filtered[start..end].to_vec()
+        } else {
+            Vec::new()
+        };
 
         Ok(StringList {
             total_count,
@@ -286,13 +312,13 @@ impl HierarchicalAnalyzer {
         })
     }
 
-    /// 階層3: 特定関数の詳細解析
+    /// 階層3: 関数詳細解析
     pub fn analyze_function_detail(
         &mut self,
         path: &str,
         function_address: u64,
     ) -> Result<FunctionDetail> {
-        // この関数のみ詳細解析（デコンパイル含む）
+        // 特定の関数についてのみ重い処理（逆アセンブル等）を行う
         use crate::disassembler::Disassembler;
         use crate::decompiler::Decompiler;
         
@@ -301,12 +327,12 @@ impl HierarchicalAnalyzer {
             .find(|f| f.address == function_address)
             .ok_or_else(|| anyhow::anyhow!("Function not found"))?;
         
-        // 逆アセンブル（制限付き: 最大100命令）
+        // 逆アセンブル（制限付き：100命令まで）
         let disasm = Disassembler::new(path)?;
         let (instructions, _) = disasm.disassemble_function(function_address)?;
         
         let disassembly: Vec<_> = instructions.iter()
-            .take(100) // 最大100命令に制限
+            .take(100) // コンテキスト保護のため制限
             .map(|insn| InstructionInfo {
                 address: insn.address,
                 mnemonic: insn.mnemonic.clone(),
@@ -315,7 +341,7 @@ impl HierarchicalAnalyzer {
             })
             .collect();
         
-        // デコンパイル（オプション）
+        // 簡易デコンパイル（オプション）
         let decompiler = Decompiler::new(path)?;
         let decompiled = decompiler.decompile(&format!("0x{:x}", function_address)).ok();
         
@@ -325,11 +351,40 @@ impl HierarchicalAnalyzer {
             size: func.size,
             disassembly,
             decompiled,
-            cross_references: vec![], // TODO: 実装
+            cross_references: vec![], // TODO: クロスリファレンス実装
         })
     }
 
-    // === キャッシュ系ヘルパー ===
+    /// 階層2: インポート一覧
+    pub fn list_imports(&mut self, path: &str) -> Result<ImportList> {
+        let buffer = fs::read(path)?;
+        let object = Object::parse(&buffer)?;
+
+        let mut imports_map: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+        let mut total_import_count = 0;
+
+        if let Object::PE(pe) = &object {
+            for import in &pe.imports {
+                let functions = imports_map.entry(import.dll.to_string()).or_default();
+                functions.push(import.name.to_string());
+                total_import_count += 1;
+            }
+        }
+        
+        let mut imports_vec: Vec<ImportInfo> = imports_map.into_iter().map(|(dll, functions)| {
+            ImportInfo { dll, functions }
+        }).collect();
+
+        imports_vec.sort_by_key(|i| i.dll.clone());
+
+        Ok(ImportList {
+            total_dll_count: imports_vec.len(),
+            total_import_count,
+            imports: imports_vec,
+        })
+    }
+
+    // === キャッシュヘルパー ===
 
     fn get_or_cache_functions(&mut self, path: &str) -> Result<Vec<FunctionInfo>> {
         if let Some(cached) = self.cache.get(path) {
@@ -337,18 +392,15 @@ impl HierarchicalAnalyzer {
         }
         
         let functions = self.extract_functions(path)?;
-        // キャッシュに保存
-        // TODO: 実装
+        // TODO: キャッシュへの保存
         Ok(functions)
     }
 
     fn get_or_cache_sections(&mut self, path: &str) -> Result<Vec<SectionInfo>> {
-        // 同様にキャッシュ実装
         self.extract_sections(path)
     }
 
     fn get_or_cache_strings(&mut self, path: &str) -> Result<Vec<StringInfo>> {
-        // 同様にキャッシュ実装
         self.extract_strings(path)
     }
 
@@ -360,14 +412,14 @@ impl HierarchicalAnalyzer {
         match object {
             Object::Elf(elf) => {
                 for sym in &elf.syms {
-                    if sym.st_type() == 2 {
+                    if sym.st_type() == 2 {  // STT_FUNC
                         if let Some(name) = elf.strtab.get_at(sym.st_name) {
                             if !name.is_empty() {
                                 functions.push(FunctionInfo {
                                     address: sym.st_value,
                                     name: name.to_string(),
                                     size: sym.st_size,
-                                    section: None, // TODO: セクション名解決
+                                    section: None,
                                 });
                             }
                         }
@@ -375,13 +427,13 @@ impl HierarchicalAnalyzer {
                 }
             }
             Object::PE(pe) => {
-                // PEのエクスポートはVecとして直接アクセス
+                // エクスポートテーブルから抽出
                 for export in &pe.exports {
                     if let Some(name) = &export.name {
                         functions.push(FunctionInfo {
                             address: export.rva as u64,
                             name: name.to_string(),
-                            size: 0, // PEでは通常サイズ不明
+                            size: 0, // PEではサイズ不明なことが多い
                             section: None,
                         });
                     }

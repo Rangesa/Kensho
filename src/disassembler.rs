@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+﻿use anyhow::{Context, Result};
 use capstone::prelude::*;
 use capstone::{Arch, Mode};
 use goblin::Object;
@@ -15,6 +15,7 @@ impl Disassembler {
         let binary_data = fs::read(path)?;
         let object = Object::parse(&binary_data)?;
 
+        // アーキテクチャとモードの判定
         let (arch, mode) = match object {
             Object::Elf(elf) => {
                 match elf.header.e_machine {
@@ -63,7 +64,7 @@ impl Disassembler {
     pub fn disassemble(&self, address: u64, count: usize) -> Result<String> {
         let cs = Capstone::new()
             .x86()
-            .mode(arch::x86::ArchMode::Mode64) // デフォルトで64ビットモード
+            .mode(arch::x86::ArchMode::Mode64) // 64ビットモードをデフォルトに
             .detail(true)
             .build()
             .context("Failed to create Capstone instance")?;
@@ -71,7 +72,7 @@ impl Disassembler {
         let mut output = String::new();
         output.push_str(&format!("=== Disassembly at 0x{:x} ===\n\n", address));
 
-        // アドレスからバイナリ内のオフセットを計算（簡易版）
+        // オフセット計算
         let offset = address as usize;
         if offset >= self.binary_data.len() {
             return Ok("Address out of bounds\n".to_string());
@@ -90,7 +91,7 @@ impl Disassembler {
                 insn.op_str().unwrap_or("")
             ));
 
-            // デバッグ用：バイトコード表示
+            // バイト表示
             let bytes = insn.bytes();
             let bytes_str = bytes
                 .iter()
@@ -103,11 +104,11 @@ impl Disassembler {
         Ok(output)
     }
 
-    /// 関数全体を逆アセンブル（制御フロー追跡付き）
+    /// 関数のトレース逆アセンブル
     pub fn disassemble_function(&self, start_address: u64) -> Result<(Vec<Instruction>, Vec<u64>)> {
         let cs = Capstone::new()
             .x86()
-            .mode(arch::x86::ArchMode::Mode64) // デフォルトで64ビットモード
+            .mode(arch::x86::ArchMode::Mode64) // 64ビットモード
             .detail(true)
             .build()?;
 
@@ -116,7 +117,7 @@ impl Disassembler {
         let mut current_addr = start_address;
         let mut visited = std::collections::HashSet::new();
 
-        // 簡易的な関数終端検出（最大1000命令）
+        // 最大1000命令までトレース
         for _ in 0..1000 {
             if visited.contains(&current_addr) {
                 break;
@@ -133,7 +134,7 @@ impl Disassembler {
                 if let Some(insn) = insns.iter().next() {
                     let mnemonic = insn.mnemonic().unwrap_or("");
                     
-                    // 命令情報を保存
+                    // 命令を保存
                     instructions.push(Instruction {
                         address: insn.address(),
                         mnemonic: mnemonic.to_string(),
@@ -141,9 +142,9 @@ impl Disassembler {
                         size: insn.bytes().len(),
                     });
 
-                    // 分岐命令の検出
+                    // 分岐を検知
                     if mnemonic.starts_with('j') || mnemonic == "call" {
-                        // 簡易的な分岐先解析（実際はより複雑）
+                        // ターゲットを解析
                         if let Some(op_str) = insn.op_str() {
                             if let Some(target) = parse_branch_target(op_str) {
                                 branches.push(target);
@@ -151,7 +152,7 @@ impl Disassembler {
                         }
                     }
 
-                    // 関数終端命令
+                    // リターン命令で終了
                     if mnemonic == "ret" || mnemonic == "retn" {
                         break;
                     }
@@ -178,7 +179,7 @@ pub struct Instruction {
 }
 
 fn parse_branch_target(op_str: &str) -> Option<u64> {
-    // "0x12345678" 形式のアドレス抽出
+    // "0x12345678" 形式のアドレスを抽出
     if op_str.starts_with("0x") {
         u64::from_str_radix(&op_str[2..], 16).ok()
     } else {

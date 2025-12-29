@@ -1,6 +1,6 @@
-/// PE実行可能ファイルの構造を探索
+﻿/// PE螳溯｡悟庄閭ｽ繝輔ぃ繧､繝ｫ縺ｮ讒矩繧呈爾邏｢
 ///
-/// 使用方法:
+/// 菴ｿ逕ｨ譁ｹ豕・
 /// cargo run --example pe_explorer -- <binary_path>
 
 use std::fs;
@@ -10,8 +10,8 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
 
     if args.len() < 2 {
-        println!("使用方法: cargo run --example pe_explorer -- <binary_path>");
-        println!("\n例:");
+        println!("菴ｿ逕ｨ譁ｹ豕・ cargo run --example pe_explorer -- <binary_path>");
+        println!("\n萓・");
         println!("  cargo run --example pe_explorer -- \"C:\\\\Programming\\\\Cheat\\\\TheFinals\\\\Discovery-d.exe\"");
         return;
     }
@@ -19,37 +19,35 @@ fn main() {
     let binary_path = &args[1];
 
     match explore_pe(binary_path) {
-        Ok(_) => println!("\n探索完了！"),
-        Err(e) => eprintln!("エラー: {}", e),
+        Ok(_) => println!("\n謗｢邏｢螳御ｺ・ｼ・),
+        Err(e) => eprintln!("繧ｨ繝ｩ繝ｼ: {}", e),
     }
 }
 
-/// PE ファイルを探索
+/// PE 繝輔ぃ繧､繝ｫ繧呈爾邏｢
 fn explore_pe(path: &str) -> Result<(), Box<dyn std::error::Error>> {
     let path = Path::new(path);
 
     println!("=== PE Explorer ===\n");
-    println!("ファイル: {}", path.display());
+    println!("繝輔ぃ繧､繝ｫ: {}", path.display());
 
     if !path.exists() {
-        return Err(format!("ファイルが見つかりません: {}", path.display()).into());
+        return Err(format!("繝輔ぃ繧､繝ｫ縺瑚ｦ九▽縺九ｊ縺ｾ縺帙ｓ: {}", path.display()).into());
     }
 
     let metadata = fs::metadata(path)?;
     let file_size = metadata.len();
-    println!("ファイルサイズ: {} bytes ({} MB)\n", file_size, file_size / 1_000_000);
+    println!("繝輔ぃ繧､繝ｫ繧ｵ繧､繧ｺ: {} bytes ({} MB)\n", file_size, file_size / 1_000_000);
 
     let binary = fs::read(path)?;
 
-    // MZ signature を確認
-    if binary.len() < 2 || binary[0] != 0x4D || binary[1] != 0x5A {
+    // MZ signature 繧堤｢ｺ隱・    if binary.len() < 2 || binary[0] != 0x4D || binary[1] != 0x5A {
         return Err("MZ signature not found - not a PE file".into());
     }
 
-    println!("✓ MZ signature found (PE header)\n");
+    println!("笨・MZ signature found (PE header)\n");
 
-    // PE header offset を取得
-    if binary.len() < 0x40 {
+    // PE header offset 繧貞叙蠕・    if binary.len() < 0x40 {
         return Err("File too small for PE header".into());
     }
 
@@ -60,15 +58,13 @@ fn explore_pe(path: &str) -> Result<(), Box<dyn std::error::Error>> {
         return Err("PE offset out of range".into());
     }
 
-    // PE signature を確認
-    if binary[pe_offset] != 0x50 || binary[pe_offset + 1] != 0x45 {
+    // PE signature 繧堤｢ｺ隱・    if binary[pe_offset] != 0x50 || binary[pe_offset + 1] != 0x45 {
         return Err("PE signature not found".into());
     }
 
-    println!("✓ PE signature found at 0x{:x}\n", pe_offset);
+    println!("笨・PE signature found at 0x{:x}\n", pe_offset);
 
-    // COFF header を解析
-    let coff_offset = pe_offset + 4;
+    // COFF header 繧定ｧ｣譫・    let coff_offset = pe_offset + 4;
     if coff_offset + 20 > binary.len() {
         return Err("COFF header out of range".into());
     }
@@ -80,8 +76,7 @@ fn explore_pe(path: &str) -> Result<(), Box<dyn std::error::Error>> {
     println!("Machine: 0x{:04x} ({})", machine, machine_to_string(machine));
     println!("Number of sections: {}\n", num_sections);
 
-    // Section headers を解析
-    let section_offset = coff_offset + 20 + u16::from_le_bytes([binary[coff_offset + 16], binary[coff_offset + 17]]) as usize;
+    // Section headers 繧定ｧ｣譫・    let section_offset = coff_offset + 20 + u16::from_le_bytes([binary[coff_offset + 16], binary[coff_offset + 17]]) as usize;
 
     println!("=== Sections ===");
 
@@ -104,12 +99,12 @@ fn explore_pe(path: &str) -> Result<(), Box<dyn std::error::Error>> {
         println!("  Raw Size: 0x{:08x} bytes", size_of_raw_data);
         println!("  File Offset: 0x{:08x}", pointer_to_raw_data);
 
-        // .text セクションの場合、コード情報を表示
+        // .text 繧ｻ繧ｯ繧ｷ繝ｧ繝ｳ縺ｮ蝣ｴ蜷医√さ繝ｼ繝画ュ蝣ｱ繧定｡ｨ遉ｺ
         if name == ".text" {
-            println!("  ⭐ This is the CODE section!");
+            println!("  箝・This is the CODE section!");
             println!("    Suggested address to disassemble: 0x{:x}", virtual_address);
 
-            // セクションの最初の16バイトを表示
+            // 繧ｻ繧ｯ繧ｷ繝ｧ繝ｳ縺ｮ譛蛻昴・16繝舌う繝医ｒ陦ｨ遉ｺ
             if pointer_to_raw_data as usize + 16 < binary.len() {
                 print!("    First bytes: ");
                 for j in 0..16 {
@@ -125,7 +120,7 @@ fn explore_pe(path: &str) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// マシンタイプを文字列に変換
+/// 繝槭す繝ｳ繧ｿ繧､繝励ｒ譁・ｭ怜・縺ｫ螟画鋤
 fn machine_to_string(machine: u16) -> &'static str {
     match machine {
         0x014c => "x86 (32-bit)",

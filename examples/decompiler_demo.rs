@@ -1,9 +1,9 @@
-/// Ghidraデコンパイラコア プロトタイプのデモ
+﻿/// Ghidra繝・さ繝ｳ繝代う繝ｩ繧ｳ繧｢ 繝励Ο繝医ち繧､繝励・繝・Δ
 ///
-/// 実行方法:
+/// 螳溯｡梧婿豕・
 /// cargo run --example decompiler_demo
 
-use ghidra_mcp::decompiler_prototype::{
+use kensho_mcp::decompiler_prototype::{
     x86_64::{X86Decoder, X86Register},
     cfg::ControlFlowGraph,
     printer::SimplePrinter,
@@ -12,17 +12,17 @@ use ghidra_mcp::decompiler_prototype::{
 fn main() {
     println!("=== Ghidra Decompiler Core Prototype Demo ===\n");
 
-    // デモ1: 簡単な関数
+    // 繝・Δ1: 邁｡蜊倥↑髢｢謨ｰ
     demo_simple_function();
 
-    // デモ2: より複雑な関数
+    // 繝・Δ2: 繧医ｊ隍・尅縺ｪ髢｢謨ｰ
     demo_complex_function();
 
     println!("\n=== Demo Complete ===");
 }
 
-/// デモ1: 簡単な関数
-/// C疑似コード:
+/// 繝・Δ1: 邁｡蜊倥↑髢｢謨ｰ
+/// C逍台ｼｼ繧ｳ繝ｼ繝・
 /// ```c
 /// int simple_add() {
 ///     int a = 0;
@@ -57,8 +57,8 @@ fn demo_simple_function() {
     println!("{}", c_code);
 }
 
-/// デモ2: より複雑な関数
-/// C疑似コード:
+/// 繝・Δ2: 繧医ｊ隍・尅縺ｪ髢｢謨ｰ
+/// C逍台ｼｼ繧ｳ繝ｼ繝・
 /// ```c
 /// int complex_function(int x, int y) {
 ///     int sum = x + y;
@@ -73,8 +73,7 @@ fn demo_complex_function() {
     let mut decoder = X86Decoder::new();
     let mut pcodes = Vec::new();
 
-    // 引数をレジスタに設定（x = rdi, y = rsi）
-    // mov rax, rdi
+    // 蠑墓焚繧偵Ξ繧ｸ繧ｹ繧ｿ縺ｫ險ｭ螳夲ｼ・ = rdi, y = rsi・・    // mov rax, rdi
     pcodes.extend(decoder.decode_mov(X86Register::RAX, X86Register::RDI, 0x2000));
     // add rax, rsi (sum = x + y)
     pcodes.extend(decoder.decode_add(X86Register::RAX, X86Register::RSI, 0x2003));
@@ -92,12 +91,10 @@ fn demo_complex_function() {
         println!("  [{}] 0x{:x}: {}", i, op.address, op);
     }
 
-    // 制御フローグラフを構築
-    let cfg = ControlFlowGraph::from_pcodes(pcodes.clone());
+    // 蛻ｶ蠕｡繝輔Ο繝ｼ繧ｰ繝ｩ繝輔ｒ讒狗ｯ・    let cfg = ControlFlowGraph::from_pcodes(pcodes.clone());
     println!("\n{}", cfg);
 
-    // C言語出力
-    println!("C Output:");
+    // C險隱槫・蜉・    println!("C Output:");
     let mut printer = SimplePrinter::new();
     let c_code = printer.print_cfg(&cfg);
     println!("{}", c_code);
