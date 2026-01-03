@@ -4,7 +4,7 @@
 //! MBA難読化解除とP-code等価性チェックに特化。
 
 use std::fmt;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 
 /// ビットベクトル式
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

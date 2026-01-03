@@ -489,6 +489,7 @@ impl ObfuscationDetector {
     }
 
     /// Calculate overall obfuscation score (Phase 10)
+    #[allow(dead_code)]
     fn calculate_overall_score(patterns: &[ObfuscationPattern], metrics: &ControlFlowMetrics) -> f64 {
         let mut score = 0.0;
 

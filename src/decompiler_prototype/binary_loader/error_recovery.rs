@@ -8,7 +8,7 @@
 //! - エントリーポイントの推定
 //! - 文字列とAPI呼び出しの抽出
 
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use std::collections::HashMap;
 
 /// エラーリカバリー結果

@@ -6,23 +6,17 @@ use serde_json::{json, Value};
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-mod hierarchical_analyzer;
-mod disassembler;
-mod decompiler;
-mod ghidra_headless;
-
-// Ghidraデコンパイラコアのプロトタイプ実装（新規追加）
-mod decompiler_prototype;
+// ライブラリからモジュールをインポート
+use kensho_mcp::hierarchical_analyzer::HierarchicalAnalyzer;
+use kensho_mcp::ghidra_headless::GhidraHeadless;
 
 // メモリスキャナ（Windows専用）
 #[cfg(windows)]
-mod memory_scanner;
-
-use hierarchical_analyzer::HierarchicalAnalyzer;
-use ghidra_headless::GhidraHeadless;
+use kensho_mcp::memory_scanner;
 
 #[derive(Debug, Deserialize)]
 struct McpRequest {
+    #[allow(dead_code)]
     jsonrpc: String,
     id: Option<Value>,
     method: String,
@@ -533,7 +527,7 @@ async fn handle_tool_call(
             let binary_data = std::fs::read(path)?;
 
             // Capstone Translatorを使用してP-codeに変換
-            use decompiler_prototype::{
+            use kensho_mcp::decompiler_prototype::{
                 CapstoneTranslator, SSATransform, TypeInference,
                 ControlFlowAnalyzer, ControlStructurePrinter, ControlFlowGraph
             };
@@ -590,7 +584,7 @@ async fn handle_tool_call(
         }
 
         "detect_export_functions" => {
-            use decompiler_prototype::{FunctionDetector};
+            use kensho_mcp::decompiler_prototype::{FunctionDetector};
             use goblin::pe::PE;
 
             let path = arguments["path"].as_str().unwrap();
@@ -624,7 +618,7 @@ async fn handle_tool_call(
         }
 
         "decompile_function_cached" => {
-            use decompiler_prototype::ParallelDecompiler;
+            use kensho_mcp::decompiler_prototype::ParallelDecompiler;
             use std::env;
             use std::path::Path;
 
@@ -708,7 +702,7 @@ async fn handle_tool_call(
         }
 
         "decompile_memory_dump" => {
-            use decompiler_prototype::{MemoryDumpFile, ParallelDecompiler};
+            use kensho_mcp::decompiler_prototype::{MemoryDumpFile, ParallelDecompiler};
             use std::env;
 
             let dump_path = arguments["dump_path"].as_str().unwrap();
@@ -766,7 +760,7 @@ async fn handle_tool_call(
 
         #[cfg(windows)]
         "dump_process_memory" => {
-            use decompiler_prototype::{MemoryDumpFile, memory_dump::create_dump_from_scanner};
+            use kensho_mcp::decompiler_prototype::{MemoryDumpFile, memory_dump::create_dump_from_scanner};
 
             let process_name = arguments["process_name"].as_str().unwrap();
             let address_str = arguments["address"].as_str().unwrap();

@@ -3,13 +3,14 @@ use gimli::{
 };
 use anyhow::{Result, Context};
 use std::collections::HashMap;
-use super::{TypeInfo, TypeKind, BaseType, StructField, UnionMember};
+use super::{TypeInfo, TypeKind, BaseType};
 pub struct DwarfSymbolParser {
     functions: HashMap<u64, String>,
     variables: HashMap<u64, String>,
     types: HashMap<u64, TypeInfo>,
     line_info: HashMap<u64, (String, u32)>,
     // 型参照解決のための中間データ
+    #[allow(dead_code)]
     type_refs: HashMap<u64, u64>, // オフセット -> 参照先型のオフセット
 }
 impl DwarfSymbolParser {
@@ -109,7 +110,7 @@ impl DwarfSymbolParser {
     fn parse_function<R: Reader>(
         &mut self,
         dwarf: &Dwarf<R>,
-        unit: &Unit<R>,
+        _unit: &Unit<R>,
         entry: &DebuggingInformationEntry<R>
     ) -> Result<()> {
         let name = if let Some(attr) = entry.attr(gimli::DW_AT_name)? {
@@ -140,7 +141,7 @@ impl DwarfSymbolParser {
     fn parse_variable<R: Reader>(
         &mut self,
         dwarf: &Dwarf<R>,
-        unit: &Unit<R>,
+        _unit: &Unit<R>,
         entry: &DebuggingInformationEntry<R>
     ) -> Result<()> {
         let name = if let Some(attr) = entry.attr(gimli::DW_AT_name)? {
@@ -171,7 +172,7 @@ impl DwarfSymbolParser {
     fn parse_type_entry<R: Reader>(
         &mut self,
         dwarf: &Dwarf<R>,
-        unit: &Unit<R>,
+        _unit: &Unit<R>,
         entry: &DebuggingInformationEntry<R>,
         offset: UnitOffset<R::Offset>
     ) -> Result<()> {

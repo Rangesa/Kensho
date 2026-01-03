@@ -48,6 +48,7 @@ pub struct VTableDetector {
     /// 検出されたvtable
     vtables: HashMap<u64, VTableInfo>,
     /// vtableへの参照（オブジェクトアドレス -> vtableアドレス）
+    #[allow(dead_code)]
     object_to_vtable: HashMap<u64, u64>,
     /// バイナリデータ（vtableの検証用）
     binary_data: Vec<u8>,
@@ -64,7 +65,7 @@ impl VTableDetector {
     }
 
     /// P-code命令列からvtableを検出
-    pub fn detect_vtables(&mut self, ops: &[PcodeOp], cfg: &ControlFlowGraph) -> Result<()> {
+    pub fn detect_vtables(&mut self, ops: &[PcodeOp], _cfg: &ControlFlowGraph) -> Result<()> {
         // ステップ1: vtableポインタへのアクセスを検出
         let vtable_candidates = self.find_vtable_pointers(ops)?;
 
@@ -122,7 +123,7 @@ impl VTableDetector {
     }
 
     /// 間接呼び出しからvtableを抽出
-    fn extract_vtable_from_indirect_call(&self, varnode: &Varnode) -> Option<u64> {
+    fn extract_vtable_from_indirect_call(&self, _varnode: &Varnode) -> Option<u64> {
         // TODO: より高度な解析
         // [reg + offset] -> reg = vtable, offset = 仮想関数のオフセット
         None

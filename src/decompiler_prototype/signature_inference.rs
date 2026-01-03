@@ -1,9 +1,9 @@
 // 関数シグネチャ推論モジュール
 // 関数の引数、戻り値、呼び出し規約を自動推論
 
-use super::pcode::{PcodeOp, OpCode, Varnode, AddressSpace};
-use super::cfg::{ControlFlowGraph, BlockId};
-use std::collections::{HashMap, HashSet};
+use super::pcode::{PcodeOp, OpCode, AddressSpace};
+use super::cfg::ControlFlowGraph;
+use std::collections::HashMap;
 use anyhow::Result;
 
 /// 呼び出し規約
@@ -146,7 +146,7 @@ impl SignatureInferenceEngine {
     }
 
     /// 呼び出し規約を推論
-    fn infer_calling_convention(&self, ops: &[PcodeOp], cfg: &ControlFlowGraph) -> CallingConvention {
+    fn infer_calling_convention(&self, ops: &[PcodeOp], _cfg: &ControlFlowGraph) -> CallingConvention {
         match self.architecture {
             Architecture::X86_64 => {
                 // x64では最初の数個の引数がレジスタ渡し
@@ -176,7 +176,7 @@ impl SignatureInferenceEngine {
     }
 
     /// レジスタを使用しているかチェック
-    fn uses_register(&self, op: &PcodeOp, reg_name: &str) -> bool {
+    fn uses_register(&self, _op: &PcodeOp, _reg_name: &str) -> bool {
         // TODO: 実際のレジスタ名とVarnodeのマッピング
         false
     }
@@ -185,7 +185,7 @@ impl SignatureInferenceEngine {
     fn infer_parameters(
         &self,
         ops: &[PcodeOp],
-        cfg: &ControlFlowGraph,
+        _cfg: &ControlFlowGraph,
         calling_convention: CallingConvention,
     ) -> Result<Vec<Parameter>> {
         let mut parameters = Vec::new();
@@ -242,10 +242,10 @@ impl SignatureInferenceEngine {
     }
 
     /// パラメータが使用されているかチェック
-    fn is_parameter_used(&self, ops: &[PcodeOp], reg_name: &str) -> bool {
+    fn is_parameter_used(&self, ops: &[PcodeOp], _reg_name: &str) -> bool {
         // 関数の最初のN命令でレジスタが読み取られているかチェック
         for op in ops.iter().take(50) {
-            for input in &op.inputs {
+            for _input in &op.inputs {
                 // TODO: Varnodeがレジスタ名と一致するかチェック
                 // 現在は仮実装
             }
@@ -254,7 +254,7 @@ impl SignatureInferenceEngine {
     }
 
     /// パラメータの型を推論
-    fn infer_parameter_type(&self, ops: &[PcodeOp], location: &ParameterLocation) -> InferredParamType {
+    fn infer_parameter_type(&self, _ops: &[PcodeOp], _location: &ParameterLocation) -> InferredParamType {
         // データフロー解析でパラメータの使われ方から型を推論
         // - ポインタ参照として使われている -> Pointer
         // - 算術演算に使われている -> Integer
@@ -265,7 +265,7 @@ impl SignatureInferenceEngine {
     }
 
     /// 戻り値を推論
-    fn infer_return_value(&self, ops: &[PcodeOp], cfg: &ControlFlowGraph) -> Result<Option<ReturnValue>> {
+    fn infer_return_value(&self, ops: &[PcodeOp], _cfg: &ControlFlowGraph) -> Result<Option<ReturnValue>> {
         // return文の直前でrax/eaxに値を設定しているかチェック
         for op in ops.iter().rev().take(20) {
             if op.opcode == OpCode::Return {

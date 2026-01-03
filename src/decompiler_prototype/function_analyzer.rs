@@ -2,10 +2,9 @@
 /// Identifies functions and builds call relationships
 
 use super::pcode::*;
-use super::cfg::*;
 use anyhow::Result;
 use goblin::pe::PE;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 /// Function information
 #[derive(Debug, Clone)]
@@ -109,11 +108,8 @@ impl FunctionDetector {
 
     /// Update function boundaries from return instructions
     pub fn update_function_boundaries(&mut self, pcodes: &[PcodeOp]) {
-        let mut last_ret_address = 0u64;
-
         for op in pcodes {
             if matches!(op.opcode, OpCode::Return) {
-                last_ret_address = op.address;
 
                 for (_, func) in self.functions.iter_mut() {
                     if func.start_address <= op.address && func.end_address.is_none() {

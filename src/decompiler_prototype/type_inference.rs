@@ -564,7 +564,7 @@ impl TypeInference {
             if let OpCode::Load = op.opcode {
                 if op.inputs.len() >= 2 {
                     // base + offset のパターンを検出
-                    if let Some((offset, field_ptr)) = self.extract_struct_field_access(&op.inputs[1], struct_base) {
+                    if let Some((offset, _field_ptr)) = self.extract_struct_field_access(&op.inputs[1], struct_base) {
                         // このフィールドポインタが別の構造体アクセスに使われているか
                         if let Some(ref output) = op.output {
                             if self.is_used_as_struct_pointer(output, ops) {
@@ -580,7 +580,7 @@ impl TypeInference {
     }
 
     /// 構造体フィールドアクセスを抽出（base + offset）
-    fn extract_struct_field_access(&self, addr_varnode: &Varnode, expected_base: &Varnode) -> Option<(usize, Varnode)> {
+    fn extract_struct_field_access(&self, _addr_varnode: &Varnode, _expected_base: &Varnode) -> Option<(usize, Varnode)> {
         // TODO: より高度なアドレス計算の解析
         // 現在は単純なケースのみ対応
         None

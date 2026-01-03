@@ -3,7 +3,7 @@
 /// Detects virtualization patterns: fetch-decode-dispatch loops
 
 use super::super::cfg::{ControlFlowGraph, BasicBlock};
-use super::super::pcode::{OpCode, PcodeOp, Varnode, AddressSpace};
+use super::super::pcode::{OpCode, Varnode, AddressSpace};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet, VecDeque};
 
@@ -552,13 +552,13 @@ impl VMDetector {
         format!("{:?}_{}_{}",  v.space, v.offset, v.size)
     }
 
-    fn parse_varnode_key(key: &str) -> Option<Varnode> {
+    fn parse_varnode_key(_key: &str) -> Option<Varnode> {
         // Simplified parsing - in production, use proper parsing
         // For now, return a dummy register varnode
         Some(Varnode::register(0, 8))
     }
 
-    fn identify_increment_pattern(block: &BasicBlock, vpc: &Varnode) -> VPCPattern {
+    fn identify_increment_pattern(block: &BasicBlock, _vpc: &Varnode) -> VPCPattern {
         for op in &block.ops {
             if matches!(op.opcode, OpCode::IntAdd) {
                 if op.inputs.len() == 2 {
@@ -576,7 +576,7 @@ impl VMDetector {
         VPCPattern::Unknown
     }
 
-    fn find_bytecode_base(block: &BasicBlock, vpc: &Varnode) -> Option<u64> {
+    fn find_bytecode_base(block: &BasicBlock, _vpc: &Varnode) -> Option<u64> {
         // Look for base address used with VPC
         for op in &block.ops {
             if matches!(op.opcode, OpCode::Load | OpCode::IntAdd) {

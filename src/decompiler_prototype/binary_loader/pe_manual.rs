@@ -61,7 +61,7 @@ impl ManualPEParser {
             return Err(anyhow!("COFF header out of bounds"));
         }
 
-        let machine = Self::read_u16(data, coff_offset)?;
+        let _machine = Self::read_u16(data, coff_offset)?;
         let number_of_sections = Self::read_u16(data, coff_offset + 2)?;
         let size_of_optional_header = Self::read_u16(data, coff_offset + 16)?;
 

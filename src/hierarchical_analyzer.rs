@@ -1,5 +1,5 @@
-﻿use anyhow::{Context, Result};
-use serde::{Deserialize, Serialize};
+﻿use anyhow::Result;
+use serde::Serialize;
 use goblin::Object;
 use std::fs;
 use std::path::Path;
@@ -117,13 +117,16 @@ pub struct HierarchicalAnalyzer {
 }
 
 struct CachedBinaryData {
+    #[allow(dead_code)]
     object: Vec<u8>,
     parsed: ParsedBinaryCache,
 }
 
 struct ParsedBinaryCache {
     functions: Vec<FunctionInfo>,
+    #[allow(dead_code)]
     strings: Vec<StringInfo>,
+    #[allow(dead_code)]
     sections: Vec<SectionInfo>,
 }
 

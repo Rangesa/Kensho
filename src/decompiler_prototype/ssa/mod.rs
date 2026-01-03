@@ -3,8 +3,6 @@
 
 
 
-use super::pcode;
-use super::cfg;
 
 mod dominance;
 mod transform;

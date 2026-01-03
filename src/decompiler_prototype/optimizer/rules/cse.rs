@@ -112,7 +112,6 @@ impl RuleCSE {
                 | OpCode::IntOr
                 | OpCode::IntXor
                 | OpCode::IntNegate
-                | OpCode::IntNegate
                 | OpCode::IntLeft
                 | OpCode::IntRight
                 | OpCode::IntSRight

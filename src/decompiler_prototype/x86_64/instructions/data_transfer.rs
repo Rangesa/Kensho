@@ -113,7 +113,7 @@ pub fn decode_enter(_decoder: &mut X86Decoder, size: u16, level: u8, address: u6
     let size_vn = Varnode::constant(size as u64, 8);
     let eight = Varnode::constant(8, 8);
 
-    let mut ops = vec![
+    let ops = vec![
         // push rbp
         PcodeOp::binary(OpCode::IntSub, rsp.clone(), rsp.clone(), eight.clone(), address),
         PcodeOp::no_output(OpCode::Store, vec![rsp.clone(), rbp.clone()], address),

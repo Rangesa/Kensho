@@ -278,16 +278,16 @@ fn propagate_add(left: &BitMask, right: &BitMask) -> BitMask {
     // Conservative analysis: track low bits that are unaffected by carry
     // For simplicity, only preserve knowledge for low bits where no carry can occur
     let mut known_zeros = 0u64;
-    let mut known_ones = 0u64;
+    let known_ones = 0u64;
 
     for i in 0..left.width {
         let bit_mask = 1u64 << i;
 
         // Check if this bit is known in both operands
         let left_is_zero = (left.known_zeros & bit_mask) != 0;
-        let left_is_one = (left.known_ones & bit_mask) != 0;
+        let _left_is_one = (left.known_ones & bit_mask) != 0;
         let right_is_zero = (right.known_zeros & bit_mask) != 0;
-        let right_is_one = (right.known_ones & bit_mask) != 0;
+        let _right_is_one = (right.known_ones & bit_mask) != 0;
 
         if left_is_zero && right_is_zero {
             // 0 + 0 = 0 (assuming no carry from lower bits)

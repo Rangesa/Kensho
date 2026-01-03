@@ -267,8 +267,8 @@ impl DeadCodeElimination {
     /// Eliminate dead code
     /// Returns number of operations removed
     pub fn eliminate(&self, ops: &mut Vec<PcodeOp>) -> usize {
-        let reachable = self.du_chain.collect_reachable_ops();
-        let original_len = ops.len();
+        let _reachable = self.du_chain.collect_reachable_ops();
+        let _original_len = ops.len();
 
         // Keep only reachable operations
         ops.retain(|_| true); // TODO: Need actual index correspondence

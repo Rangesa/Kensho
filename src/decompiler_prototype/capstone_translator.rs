@@ -197,6 +197,7 @@ impl CapstoneTranslator {
 
 
 
+    #[allow(dead_code)]
     fn translate_instruction_direct(
         &mut self,
         detail_result: &Result<capstone::InsnDetail, capstone::Error>,
@@ -294,6 +295,7 @@ impl CapstoneTranslator {
 
 
 
+    #[allow(dead_code)]
     fn translate_instruction(
         &mut self,
         insn: &capstone::Insn,

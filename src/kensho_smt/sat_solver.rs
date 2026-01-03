@@ -123,7 +123,7 @@ impl CNF {
             }
 
             BoolExpr::Var(name, bit_index) => {
-                let key = format!("{}[{}]", name, bit_index);
+                let _key = format!("{}[{}]", name, bit_index);
                 let v = *var_map
                     .entry(BoolExpr::Var(name.clone(), *bit_index))
                     .or_insert_with(|| {

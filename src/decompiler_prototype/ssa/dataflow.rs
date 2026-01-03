@@ -1,5 +1,5 @@
 use super::super::cfg::*;
-use super::super::pcode::{Varnode, OpCode, PcodeOp, AddressSpace};
+use super::super::pcode::{Varnode, AddressSpace};
 use std::collections::{HashMap, HashSet};
 
 

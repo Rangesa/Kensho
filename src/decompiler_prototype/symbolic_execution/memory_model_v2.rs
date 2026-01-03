@@ -9,7 +9,7 @@
 //! - Use-after-free検出
 
 use super::symbolic_address::{SymbolicAddress, AddressOverlap, AddressRange};
-use crate::decompiler_prototype::pcode::{Varnode, AddressSpace};
+use crate::decompiler_prototype::pcode::Varnode;
 use std::collections::HashMap;
 
 /// シンボリックメモリの値
@@ -71,11 +71,15 @@ impl SymbolicValue {
 
 /// メモリアクセス記録
 #[derive(Debug, Clone)]
-struct MemoryAccess {
-    address: SymbolicAddress,
-    value: SymbolicValue,
-    size: usize,
-    is_write: bool,
+pub struct MemoryAccess {
+    #[allow(dead_code)]
+    pub address: SymbolicAddress,
+    #[allow(dead_code)]
+    pub value: SymbolicValue,
+    #[allow(dead_code)]
+    pub size: usize,
+    #[allow(dead_code)]
+    pub is_write: bool,
 }
 
 /// メモリ領域の情報
@@ -152,7 +156,7 @@ impl SymbolicMemoryV2 {
     }
 
     /// 具体的アドレスからの読み取り
-    fn read_concrete(&self, address: u64, size: usize) -> SymbolicValue {
+    fn read_concrete(&self, address: u64, _size: usize) -> SymbolicValue {
         if let Some(value) = self.concrete_memory.get(&address) {
             value.clone()
         } else {

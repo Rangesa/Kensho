@@ -106,7 +106,7 @@ impl MemoryScanner {
 
     /// モジュールのベースアドレスを取得
     #[cfg(windows)]
-    fn get_module_base_address(process_handle: HANDLE) -> Result<usize> {
+    fn get_module_base_address(_process_handle: HANDLE) -> Result<usize> {
         unsafe {
             let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, 0)?;
 

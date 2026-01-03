@@ -47,12 +47,14 @@ impl ExpressionSimplifier {
     }
 
     /// Z3式をP-codeに逆変換
+    #[allow(dead_code)]
     fn z3_to_pcode(&self, _z3_expr: &str) -> Option<PcodeOp> {
         // TODO: Z3の式表現をパースしてP-codeに変換
         None
     }
 
     /// パターンを学習
+    #[allow(dead_code)]
     fn learn_pattern(&mut self, _complex: &PcodeOp, _simplified: &PcodeOp) {
         // TODO: 複雑な式と簡約化された式のペアからパターンを学習
     }

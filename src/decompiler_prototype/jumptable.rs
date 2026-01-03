@@ -3,7 +3,6 @@
 
 use crate::decompiler_prototype::pcode::{AddressSpace, OpCode, PcodeOp, Varnode};
 use crate::decompiler_prototype::dataflow::DefUseChain;
-use std::collections::{HashMap, HashSet};
 use anyhow::Result;
 
 /// Represents a jump table structure

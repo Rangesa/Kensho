@@ -73,7 +73,7 @@ pub struct MBASimplifier;
 
 impl MBASimplifier {
     /// Apply algebraic simplification rules
-    pub fn simplify_basic(pattern: &MBAPattern, ops: &[PcodeOp]) -> Option<SimplifiedExpression> {
+    pub fn simplify_basic(_pattern: &MBAPattern, ops: &[PcodeOp]) -> Option<SimplifiedExpression> {
         // Try each rule in order
         let rules = [
             Self::apply_rule_xor_and_add,
@@ -294,7 +294,7 @@ impl MBASimplifier {
     }
 
     /// Rule 5: (x & ~y) + (y & ~x) → x ^ y
-    fn apply_rule_masked_xor(ops: &[PcodeOp]) -> Option<SimplifiedExpression> {
+    fn apply_rule_masked_xor(_ops: &[PcodeOp]) -> Option<SimplifiedExpression> {
         // This is a more complex pattern, placeholder for now
         None
     }

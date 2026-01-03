@@ -92,7 +92,7 @@ impl Decompiler {
     }
 
     /// 擬似コード生成
-    fn generate_pseudo_code(&self, instructions: &[Instruction], cfg: &ControlFlowGraph) -> String {
+    fn generate_pseudo_code(&self, instructions: &[Instruction], _cfg: &ControlFlowGraph) -> String {
         let mut code = String::new();
         
         // 関数シグネチャ（簡易版）
@@ -244,7 +244,10 @@ impl ControlFlowGraph {
 
 #[derive(Debug)]
 struct BasicBlock {
+    #[allow(dead_code)]
     start_address: u64,
+    #[allow(dead_code)]
     end_address: u64,
+    #[allow(dead_code)]
     successors: Vec<u64>,
 }

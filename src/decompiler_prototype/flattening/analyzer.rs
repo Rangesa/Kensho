@@ -1,7 +1,6 @@
 use super::super::cfg::{ControlFlowGraph, BasicBlock};
-use super::super::pcode::{OpCode, PcodeOp, Varnode, AddressSpace};
+use super::super::pcode::{OpCode, Varnode, AddressSpace};
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, HashSet, VecDeque};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StateVariableInfo {
     pub state_variable: Varnode,

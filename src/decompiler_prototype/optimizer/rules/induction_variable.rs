@@ -24,7 +24,7 @@
 //! ```
 
 use crate::decompiler_prototype::pcode::{PcodeOp, OpCode, Varnode};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 #[derive(Debug, Clone)]
 pub struct InductionVariable {

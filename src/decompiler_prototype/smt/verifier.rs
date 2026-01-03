@@ -6,9 +6,8 @@
 /// - Path feasibility
 
 use super::super::pcode::{OpCode, PcodeOp, Varnode};
-use super::converter::PcodeToZ3Converter;
 use serde::{Deserialize, Serialize};
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 // Note: Z3 integration is optional due to platform constraints
 // This module provides the interface and logic for when Z3 is available
@@ -55,6 +54,7 @@ pub struct SMTStatistics {
 }
 
 pub struct SMTVerifier {
+    #[allow(dead_code)]
     timeout_ms: u64,
     statistics: SMTStatistics,
 }
@@ -239,7 +239,7 @@ impl SMTVerifier {
         OpaquenessResult::Unknown
     }
 
-    fn check_equivalence_impl(&self, complex: &[PcodeOp], simple: &PcodeOp) -> EquivalenceResult {
+    fn check_equivalence_impl(&self, _complex: &[PcodeOp], _simple: &PcodeOp) -> EquivalenceResult {
         // Placeholder implementation
         // In production, this would use Z3 to prove equivalence
 

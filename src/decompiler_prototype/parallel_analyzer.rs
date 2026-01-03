@@ -3,8 +3,6 @@
 
 use super::cfg::*;
 use super::ssa::*;
-use super::ssa_advanced::*;
-use super::nzmask::*;
 use super::optimizer::*;
 use super::type_inference::*;
 use super::control_flow::*;

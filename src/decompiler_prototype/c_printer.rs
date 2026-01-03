@@ -2,12 +2,13 @@
 /// Converts P-code operations into readable C-style pseudocode
 
 use crate::decompiler_prototype::pcode::{AddressSpace, OpCode, PcodeOp, Varnode};
-use crate::decompiler_prototype::type_inference::{Type, TypeInference};
+use crate::decompiler_prototype::type_inference::TypeInference;
 use std::collections::HashMap;
 
 /// C code printer
 pub struct CPrinter {
     /// Type inference information
+    #[allow(dead_code)]
     type_info: TypeInference,
     /// Variable name mapping
     var_names: HashMap<VarnodeKey, String>,
@@ -89,7 +90,7 @@ impl CPrinter {
 
     /// Get C type name for a varnode
     fn get_type_name(&self, vn: &Varnode) -> String {
-        use crate::decompiler_prototype::type_inference::{IntType, FloatType};
+        
 
         let _key = VarnodeKey::from(vn);
 
@@ -166,7 +167,7 @@ impl CPrinter {
         match op.opcode {
             // Copy: output = input
             Copy => {
-                if let Some(output) = &op.output {
+                if let Some(_output) = &op.output {
                     let input_str = self.get_var_name(&op.inputs[0]);
                     format!("{}", input_str)
                 } else {

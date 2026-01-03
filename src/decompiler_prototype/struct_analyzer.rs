@@ -3,7 +3,7 @@
 
 use super::pcode::{PcodeOp, OpCode, Varnode, AddressSpace};
 use super::cfg::ControlFlowGraph;
-use std::collections::{HashMap, HashSet, BTreeMap};
+use std::collections::{HashMap, BTreeMap};
 use anyhow::Result;
 
 /// 推論された型の種類
@@ -74,6 +74,7 @@ struct MemoryAccess {
     /// 読み取りか書き込みか
     is_write: bool,
     /// アクセス元の命令アドレス
+    #[allow(dead_code)]
     instruction_addr: u64,
 }
 
@@ -98,7 +99,7 @@ impl StructAnalyzer {
     }
 
     /// P-code命令列から構造体フィールドを推論
-    pub fn analyze_struct_fields(&mut self, ops: &[PcodeOp], cfg: &ControlFlowGraph) -> Result<()> {
+    pub fn analyze_struct_fields(&mut self, ops: &[PcodeOp], _cfg: &ControlFlowGraph) -> Result<()> {
         // ステップ1: メモリアクセスパターンを収集
         self.collect_memory_accesses(ops)?;
 
@@ -257,9 +258,9 @@ impl StructAnalyzer {
     }
 
     /// フィールドの型を推論
-    fn infer_field_types(&mut self, ops: &[PcodeOp]) -> Result<()> {
+    fn infer_field_types(&mut self, _ops: &[PcodeOp]) -> Result<()> {
         // データフロー解析を使用してフィールドの使われ方から型を推論
-        for (base_key, layout) in &mut self.inferred_structs {
+        for (_base_key, layout) in &mut self.inferred_structs {
             for field in &mut layout.fields {
                 // サイズベースの基本的な型推論
                 field.field_type = match field.size {
@@ -293,7 +294,7 @@ impl StructAnalyzer {
         let mut summary = String::new();
         summary.push_str(&format!("検出された構造体: {} 個\n", self.inferred_structs.len()));
 
-        for (base_key, layout) in &self.inferred_structs {
+        for (_base_key, layout) in &self.inferred_structs {
             summary.push_str(&format!("\n構造体: {} (サイズ: {} バイト)\n",
                 layout.name.as_ref().unwrap_or(&"unknown".to_string()),
                 layout.total_size));

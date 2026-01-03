@@ -2,7 +2,7 @@
   "mcpServers": {
     "kensho-mcp": {
       "type": "stdio",
-      "command": "D:\\Programming\\MCP\\kensho-mcp-go.exe",
+      "command": "D:\\Programming\\MCP\\target\\release\\kensho-mcp.exe",
       "args": [],
       "env": {}
     }

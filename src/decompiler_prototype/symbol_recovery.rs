@@ -125,7 +125,7 @@ impl SymbolTable {
     }
 
     /// Convert RVA to file offset
-    fn rva_to_offset(&self, binary_data: &[u8], rva: u32) -> Result<u32> {
+    fn rva_to_offset(&self, _binary_data: &[u8], rva: u32) -> Result<u32> {
         // Simplified: assume .text section (should parse section table in reality)
         // Typically .text starts at RVA 0x1000, file offset 0x400
         let text_rva_start = 0x1000u32;
@@ -145,7 +145,7 @@ impl SymbolTable {
         }
 
         // Number of Functions
-        let num_functions = u32::from_le_bytes([
+        let _num_functions = u32::from_le_bytes([
             binary_data[offset + 20],
             binary_data[offset + 21],
             binary_data[offset + 22],

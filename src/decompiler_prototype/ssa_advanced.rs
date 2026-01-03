@@ -1,8 +1,8 @@
 /// Advanced SSA transformation implementation
 /// Based on Ghidra's heritage.cc algorithm
 
-use crate::decompiler_prototype::pcode::{AddressSpace, OpCode, PcodeOp, Varnode};
-use crate::decompiler_prototype::cfg::{BasicBlock, BlockId, ControlFlowGraph};
+use crate::decompiler_prototype::pcode::{AddressSpace, OpCode, Varnode};
+use crate::decompiler_prototype::cfg::{BlockId, ControlFlowGraph};
 use crate::decompiler_prototype::ssa::DominanceTree;
 use std::collections::HashMap;
 
@@ -15,9 +15,9 @@ pub struct VariableStack {
 
 /// Address identifier for variables (space + offset)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct VarnodeAddress {
-    space: AddressSpace,
-    offset: u64,
+pub struct VarnodeAddress {
+    pub space: AddressSpace,
+    pub offset: u64,
 }
 
 impl From<&Varnode> for VarnodeAddress {

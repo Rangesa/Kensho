@@ -95,7 +95,7 @@ impl NZMaskAnalyzer {
                 Some(mask1 | mask2)
             }
             IntNegate => {
-                let mask = self.get_nzmask(&op.inputs[0]);
+                let _mask = self.get_nzmask(&op.inputs[0]);
                 let size = op.output.as_ref().map(|v| v.size).unwrap_or(8);
                 Some(Self::calc_mask(size))
             }

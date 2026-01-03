@@ -120,7 +120,7 @@ impl RuleStrengthReduction {
             }
             3 => {
                 // x * 3 = x + x + x → (x << 1) + x
-                let temp = Varnode::new(AddressSpace::Unique, rand::random(), var.size);
+                let _temp = Varnode::new(AddressSpace::Unique, rand::random(), var.size);
                 // これは簡略化 - 実際には複数命令に展開
                 None
             }

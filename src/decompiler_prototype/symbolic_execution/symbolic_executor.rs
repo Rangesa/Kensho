@@ -20,7 +20,7 @@
 //! let states = executor.execute(&cfg, entry_point);
 //! ```
 
-use crate::decompiler_prototype::pcode::{OpCode, PcodeOp, Varnode, AddressSpace};
+use crate::decompiler_prototype::pcode::Varnode;
 use crate::decompiler_prototype::cfg::{ControlFlowGraph, BlockId};
 use std::collections::{HashMap, HashSet, VecDeque, BinaryHeap};
 use std::cmp::Ordering;
@@ -200,9 +200,11 @@ impl LoopBoundTracker {
 /// シンボリック実行エンジン
 pub struct SymbolicExecutor {
     /// kensho SMTソルバー
+    #[allow(dead_code)]
     kensho_solver: KenshoSolver,
 
     /// 書き換えシステム
+    #[allow(dead_code)]
     rewrite_system: RewriteSystem,
 
     /// パス探索戦略
@@ -645,6 +647,7 @@ impl SymbolicExecutor {
 
     /// State Mergingを実行（合流点で複数のステートをマージ）
     /// 注意: 現在は基本構造のみ実装、完全なITE式マージは未実装
+    #[allow(dead_code)]
     fn try_merge_states(&mut self, block_id: BlockId) -> Option<SymbolicState> {
         if !self.enable_state_merging {
             return None;

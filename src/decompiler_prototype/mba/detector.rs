@@ -191,7 +191,7 @@ impl MBADetector {
         let mut depth = 0;
         let mut defined_vars = HashMap::new();
 
-        for (idx, op) in ops.iter().enumerate() {
+        for (_idx, op) in ops.iter().enumerate() {
             if let Some(output) = &op.output {
                 // Check if inputs are defined in this chain
                 let max_input_depth = op

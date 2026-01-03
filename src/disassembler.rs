@@ -6,7 +6,9 @@ use std::fs;
 
 pub struct Disassembler {
     binary_data: Vec<u8>,
+    #[allow(dead_code)]
     arch: Arch,
+    #[allow(dead_code)]
     mode: Mode,
 }
 

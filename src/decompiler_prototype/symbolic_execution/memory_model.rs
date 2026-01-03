@@ -8,7 +8,7 @@
 //! - メモリエイリアシング検出
 //! - コピーオンライト最適化
 
-use crate::decompiler_prototype::pcode::{Varnode, AddressSpace};
+use crate::decompiler_prototype::pcode::Varnode;
 use std::collections::HashMap;
 
 /// シンボリックメモリの値
@@ -127,7 +127,7 @@ impl SymbolicMemory {
     }
 
     /// メモリから読み取り
-    pub fn read(&mut self, address: u64, size: usize) -> SymbolicValue {
+    pub fn read(&mut self, address: u64, _size: usize) -> SymbolicValue {
         self.stats.reads += 1;
 
         // アドレスから値を読み取る

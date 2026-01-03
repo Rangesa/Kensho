@@ -112,7 +112,7 @@ impl RuleLICM {
                 let preds: Vec<usize> = cfg
                     .blocks
                     .iter()
-                    .filter(|(block_id, b)| b.successors.contains(&i))
+                    .filter(|(_block_id, b)| b.successors.contains(&i))
                     .map(|(block_id, _)| *block_id)
                     .collect();
 
