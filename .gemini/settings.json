@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "kensho-mcp": {
+      "command": "D:\\Programming\\MCP\\target\\release\\kensho-mcp.exe",
+      "args": [],
+      "env": {},
+      "timeout": 60000,
+      "trust": true
+    }
+  }
+}

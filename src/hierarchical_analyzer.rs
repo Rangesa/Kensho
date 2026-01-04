@@ -15,9 +15,20 @@ pub struct BinarySummary {
     
     // 統計のみを保持
     pub stats: BinaryStats,
+    
+    // エントロピー・パッキング分析結果
+    pub entropy_analysis: Option<EntropyAnalysis>,
 }
 
 #[derive(Debug, Serialize)]
+pub struct EntropyAnalysis {
+    pub average_entropy: f64,
+    pub is_packed: bool,
+    pub packed_score: f64, // 0.0 - 1.0 (パッキングの確信度)
+    pub suspicious_sections: Vec<String>,
+}
+
+#[derive(Debug, Serialize, Clone, Copy)]
 pub struct BinaryStats {
     pub section_count: usize,
     pub function_count: usize,
@@ -42,6 +53,7 @@ pub struct SectionInfo {
     pub address: u64,
     pub size: u64,
     pub section_type: String,
+    pub entropy: f64, // 追加: 0.0 - 8.0
 }
 
 /// 階層2: 関数一覧（ページネーション + フィルタリング対応）
@@ -207,6 +219,8 @@ impl HierarchicalAnalyzer {
             }
         };
 
+        let entropy_analysis = self.analyze_entropy_summary(path, &format, &architecture, &stats).ok();
+
         Ok(BinarySummary {
             file_path: path_obj.display().to_string(),
             file_size: metadata.len(),
@@ -214,6 +228,7 @@ impl HierarchicalAnalyzer {
             architecture,
             entry_point,
             stats,
+            entropy_analysis,
         })
     }
 
@@ -448,6 +463,84 @@ impl HierarchicalAnalyzer {
         Ok(functions)
     }
 
+    /// パッキング解析（セクションベース）
+    fn analyze_entropy_summary(
+        &self,
+        path: &str,
+        _format: &str,
+        _arch: &str,
+        stats: &BinaryStats,
+    ) -> Result<EntropyAnalysis> {
+        // セクション情報を取得（ここでエントロピーも計算される）
+        let sections = self.extract_sections(path)?;
+        
+        let mut suspicious_sections = Vec::new();
+        let mut total_entropy = 0.0;
+        let mut weighted_entropy = 0.0;
+        let mut total_size = 0;
+        
+        for section in &sections {
+            total_entropy += section.entropy;
+            
+            // 加重平均用
+            weighted_entropy += section.entropy * (section.size as f64);
+            total_size += section.size;
+            
+            // 判定基準: エントロピー > 7.2 (かなり高い/圧縮レベル)
+            // かつ、名前が標準的でない、またはサイズが大きい
+            if section.entropy > 7.2 && section.size > 1024 {
+                suspicious_sections.push(section.name.clone());
+            } else if section.entropy > 6.8 && section.name == ".std" {
+                 // ユーザー報告の特異なケース対応
+                 suspicious_sections.push(section.name.clone());
+            }
+        }
+        
+        let average_entropy = if !sections.is_empty() {
+            total_entropy / sections.len() as f64
+        } else {
+            0.0
+        };
+        
+        let global_weighted_entropy = if total_size > 0 {
+            weighted_entropy / total_size as f64
+        } else {
+            0.0
+        };
+
+        // パッキング判定スコア (ヒューリスティック)
+        let mut packed_score = 0.0;
+        
+        // 1. 全体のエントロピーが高い
+        if global_weighted_entropy > 6.8 { packed_score += 0.4; }
+        if global_weighted_entropy > 7.2 { packed_score += 0.4; }
+        
+        // 2. インポート関数が極端に少ない (パッカーの特徴)
+        if stats.import_count < 5 && stats.function_count > 0 {
+            packed_score += 0.3;
+        }
+
+        // 3. 怪しいセクションが存在するか
+        if !suspicious_sections.is_empty() {
+            packed_score += 0.3;
+        }
+        
+        // 4. セクション名異常 (.stdなど)
+        if suspicious_sections.iter().any(|s| s.starts_with(".std")) {
+             packed_score += 0.2;
+        }
+
+        let is_packed = packed_score >= 0.5;
+
+        Ok(EntropyAnalysis {
+            average_entropy: global_weighted_entropy, // 単純平均より加重平均の方が実態に近い
+            is_packed,
+            packed_score: if packed_score > 1.0 { 1.0 } else { packed_score },
+            suspicious_sections,
+        })
+
+    }
+
     fn extract_sections(&self, path: &str) -> Result<Vec<SectionInfo>> {
         let buffer = fs::read(path)?;
         let object = Object::parse(&buffer)?;
@@ -457,12 +550,22 @@ impl HierarchicalAnalyzer {
             Object::Elf(elf) => {
                 for (i, section) in elf.section_headers.iter().enumerate() {
                     if let Some(name) = elf.shdr_strtab.get_at(section.sh_name) {
+                        // エントロピー計算
+                        let start = section.sh_offset as usize;
+                        let size = section.sh_size as usize;
+                        let entropy = if start + size <= buffer.len() {
+                            Self::calculate_entropy(&buffer[start..start + size])
+                        } else {
+                            0.0
+                        };
+
                         sections.push(SectionInfo {
                             index: i,
                             name: name.to_string(),
                             address: section.sh_addr,
                             size: section.sh_size,
                             section_type: format!("{:?}", section.sh_type),
+                            entropy,
                         });
                     }
                 }
@@ -472,12 +575,23 @@ impl HierarchicalAnalyzer {
                     let name = String::from_utf8_lossy(&section.name)
                         .trim_end_matches('\0')
                         .to_string();
+                    
+                    // エントロピー計算
+                    let start = section.pointer_to_raw_data as usize;
+                    let size = section.size_of_raw_data as usize;
+                    let entropy = if start + size <= buffer.len() {
+                        Self::calculate_entropy(&buffer[start..start + size])
+                    } else {
+                        0.0
+                    };
+
                     sections.push(SectionInfo {
                         index: i,
                         name,
                         address: section.virtual_address as u64,
                         size: section.virtual_size as u64,
                         section_type: "PE_SECTION".to_string(),
+                        entropy,
                     });
                 }
             }
@@ -486,6 +600,7 @@ impl HierarchicalAnalyzer {
 
         Ok(sections)
     }
+
 
     fn extract_strings(&self, path: &str) -> Result<Vec<StringInfo>> {
         let buffer = fs::read(path)?;
@@ -538,5 +653,29 @@ impl HierarchicalAnalyzer {
         }
 
         count
+    }
+
+    /// Shannon Entropyを計算 (0.0 - 8.0)
+    fn calculate_entropy(data: &[u8]) -> f64 {
+        if data.is_empty() {
+            return 0.0;
+        }
+
+        let mut frequencies = [0usize; 256];
+        for &byte in data {
+            frequencies[byte as usize] += 1;
+        }
+
+        let total = data.len() as f64;
+        let mut entropy = 0.0;
+
+        for &count in frequencies.iter() {
+            if count > 0 {
+                let p = count as f64 / total;
+                entropy -= p * p.log2();
+            }
+        }
+
+        entropy
     }
 }

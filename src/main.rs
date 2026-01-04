@@ -375,6 +375,108 @@ async fn handle_list_tools(ghidra_enabled: bool) -> Result<Value> {
                     },
                     "required": ["dump_path", "function_offset"]
                 }
+            }),
+
+            // === 難読化解析ツール（Phase 1） ===
+
+            // 難読化パターン検出
+            json!({
+                "name": "detect_obfuscation",
+                "description": "バイナリから難読化パターンを検出（MBA、制御フロー平坦化、VM保護等）",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "path": {
+                            "type": "string",
+                            "description": "バイナリファイルパス"
+                        },
+                        "function_address": {
+                            "type": "string",
+                            "description": "関数のアドレス（16進数: 0x140001000）"
+                        },
+                        "max_instructions": {
+                            "type": "integer",
+                            "description": "最大命令数",
+                            "default": 1000
+                        }
+                    },
+                    "required": ["path", "function_address"]
+                }
+            }),
+
+            // VM保護検出
+            json!({
+                "name": "detect_vm_protection",
+                "description": "仮想化ベース難読化（VMProtect等）のパターンを検出",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "path": {
+                            "type": "string",
+                            "description": "バイナリファイルパス"
+                        },
+                        "function_address": {
+                            "type": "string",
+                            "description": "関数のアドレス（16進数: 0x140001000）"
+                        },
+                        "max_instructions": {
+                            "type": "integer",
+                            "description": "最大命令数",
+                            "default": 1000
+                        }
+                    },
+                    "required": ["path", "function_address"]
+                }
+            }),
+
+            // 制御フロー平坦化解析
+            json!({
+                "name": "analyze_control_flow_flattening",
+                "description": "制御フロー平坦化（Control Flow Flattening）を検出・解析",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "path": {
+                            "type": "string",
+                            "description": "バイナリファイルパス"
+                        },
+                        "function_address": {
+                            "type": "string",
+                            "description": "関数のアドレス（16進数: 0x140001000）"
+                        },
+                        "max_instructions": {
+                            "type": "integer",
+                            "description": "最大命令数",
+                            "default": 1000
+                        }
+                    },
+                    "required": ["path", "function_address"]
+                }
+            }),
+
+            // MBA簡約化
+            json!({
+                "name": "simplify_mba_expression",
+                "description": "MBA（Mixed Boolean-Arithmetic）式を簡約化して元の式を復元",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "path": {
+                            "type": "string",
+                            "description": "バイナリファイルパス"
+                        },
+                        "function_address": {
+                            "type": "string",
+                            "description": "関数のアドレス（16進数: 0x140001000）"
+                        },
+                        "max_instructions": {
+                            "type": "integer",
+                            "description": "最大命令数",
+                            "default": 1000
+                        }
+                    },
+                    "required": ["path", "function_address"]
+                }
             })
     ];
 
@@ -793,6 +895,221 @@ async fn handle_tool_call(
                 "size": metadata.size,
                 "output_metadata": dump_file.metadata_path().display().to_string(),
                 "output_data": dump_file.data_path().display().to_string()
+            })
+        }
+
+        // === 難読化解析ハンドラー（Phase 1） ===
+
+        "detect_obfuscation" => {
+            use kensho_mcp::decompiler_prototype::{
+                ObfuscationDetector, CapstoneTranslator, ControlFlowGraph
+            };
+
+            let path = arguments["path"].as_str().unwrap();
+            let addr_str = arguments["function_address"].as_str().unwrap();
+            let max_instructions = arguments["max_instructions"].as_u64().unwrap_or(1000) as usize;
+
+            let address = if addr_str.starts_with("0x") {
+                u64::from_str_radix(&addr_str[2..], 16)?
+            } else {
+                addr_str.parse()?
+            };
+
+            // バイナリロード
+            let binary_data = std::fs::read(path)?;
+            let offset = address as usize;
+            let code_slice = if offset < binary_data.len() {
+                let end = std::cmp::min(offset + max_instructions * 15, binary_data.len());
+                &binary_data[offset..end]
+            } else {
+                &[]
+            };
+
+            // P-codeに変換
+            let mut translator = CapstoneTranslator::new()?;
+            let pcodes = translator.translate(code_slice, address, max_instructions)?;
+            let cfg = ControlFlowGraph::from_pcodes(pcodes);
+
+            // 難読化検出
+            let obfuscation_data = ObfuscationDetector::analyze(&cfg);
+
+            json!({
+                "function_address": format!("0x{:x}", address),
+                "is_obfuscated": obfuscation_data.overall_score > 0.5,
+                "overall_score": obfuscation_data.overall_score,
+                "patterns_detected": obfuscation_data.patterns.iter().map(|p| {
+                    json!({
+                        "type": format!("{:?}", p.pattern_type),
+                        "confidence": p.confidence,
+                        "locations": p.locations.iter().map(|loc| {
+                            json!({
+                                "block_id": loc.block_id,
+                                "op_index": loc.op_index,
+                                "address": loc.address.as_ref()
+                            })
+                        }).collect::<Vec<_>>(),
+                        "description": p.description
+                    })
+                }).collect::<Vec<_>>(),
+                "statistics": {
+                    "total_patterns": obfuscation_data.patterns.len(),
+                    "mba_count": obfuscation_data.patterns.iter().filter(|p| matches!(p.pattern_type, kensho_mcp::decompiler_prototype::ObfuscationPatternType::MBAExpression)).count(),
+                    "vm_count": obfuscation_data.patterns.iter().filter(|p| matches!(p.pattern_type, kensho_mcp::decompiler_prototype::ObfuscationPatternType::VMBasedObfuscation)).count(),
+                    "flattening_count": obfuscation_data.patterns.iter().filter(|p| matches!(p.pattern_type, kensho_mcp::decompiler_prototype::ObfuscationPatternType::ControlFlowFlattening)).count()
+                }
+            })
+        }
+
+        "detect_vm_protection" => {
+            use kensho_mcp::decompiler_prototype::{
+                VMDetector, CapstoneTranslator, ControlFlowGraph
+            };
+
+            let path = arguments["path"].as_str().unwrap();
+            let addr_str = arguments["function_address"].as_str().unwrap();
+            let max_instructions = arguments["max_instructions"].as_u64().unwrap_or(1000) as usize;
+
+            let address = if addr_str.starts_with("0x") {
+                u64::from_str_radix(&addr_str[2..], 16)?
+            } else {
+                addr_str.parse()?
+            };
+
+            let binary_data = std::fs::read(path)?;
+            let offset = address as usize;
+            let code_slice = if offset < binary_data.len() {
+                let end = std::cmp::min(offset + max_instructions * 15, binary_data.len());
+                &binary_data[offset..end]
+            } else {
+                &[]
+            };
+
+            let mut translator = CapstoneTranslator::new()?;
+            let pcodes = translator.translate(code_slice, address, max_instructions)?;
+            let cfg = ControlFlowGraph::from_pcodes(pcodes);
+
+            // VM保護検出
+            let vm_pattern = VMDetector::detect(&cfg);
+
+            json!({
+                "function_address": format!("0x{:x}", address),
+                "vm_detected": vm_pattern.is_some(),
+                "pattern": vm_pattern.as_ref().map(|p| {
+                    json!({
+                        "type": format!("{:?}", p),
+                        "confidence": 0.8,
+                        "description": "VM-based obfuscation pattern detected"
+                    })
+                })
+            })
+        }
+
+        "analyze_control_flow_flattening" => {
+            use kensho_mcp::decompiler_prototype::{
+                FlatteningAnalyzer, CapstoneTranslator, ControlFlowGraph
+            };
+
+            let path = arguments["path"].as_str().unwrap();
+            let addr_str = arguments["function_address"].as_str().unwrap();
+            let max_instructions = arguments["max_instructions"].as_u64().unwrap_or(1000) as usize;
+
+            let address = if addr_str.starts_with("0x") {
+                u64::from_str_radix(&addr_str[2..], 16)?
+            } else {
+                addr_str.parse()?
+            };
+
+            let binary_data = std::fs::read(path)?;
+            let offset = address as usize;
+            let code_slice = if offset < binary_data.len() {
+                let end = std::cmp::min(offset + max_instructions * 15, binary_data.len());
+                &binary_data[offset..end]
+            } else {
+                &[]
+            };
+
+            let mut translator = CapstoneTranslator::new()?;
+            let pcodes = translator.translate(code_slice, address, max_instructions)?;
+            let cfg = ControlFlowGraph::from_pcodes(pcodes);
+
+            // 制御フロー平坦化解析
+            let state_var_opt = FlatteningAnalyzer::analyze(&cfg);
+            let is_flattened = state_var_opt.is_some();
+
+            json!({
+                "function_address": format!("0x{:x}", address),
+                "is_flattened": is_flattened,
+                "state_variable": state_var_opt.as_ref().map(|sv| {
+                    json!({
+                        "varnode": format!("{:?}", sv.state_variable),
+                        "dispatcher_block": sv.dispatcher_block,
+                        "transitions_count": sv.transitions.len(),
+                        "confidence": sv.confidence
+                    })
+                }),
+                "confidence": if is_flattened { 0.9 } else { 0.0 }
+            })
+        }
+
+        "simplify_mba_expression" => {
+            use kensho_mcp::decompiler_prototype::{
+                MBADetector, KenshoMBASimplifier, CapstoneTranslator
+            };
+
+            let path = arguments["path"].as_str().unwrap();
+            let addr_str = arguments["function_address"].as_str().unwrap();
+            let max_instructions = arguments["max_instructions"].as_u64().unwrap_or(1000) as usize;
+
+            let address = if addr_str.starts_with("0x") {
+                u64::from_str_radix(&addr_str[2..], 16)?
+            } else {
+                addr_str.parse()?
+            };
+
+            let binary_data = std::fs::read(path)?;
+            let offset = address as usize;
+            let code_slice = if offset < binary_data.len() {
+                let end = std::cmp::min(offset + max_instructions * 15, binary_data.len());
+                &binary_data[offset..end]
+            } else {
+                &[]
+            };
+
+            let mut translator = CapstoneTranslator::new()?;
+            let pcodes = translator.translate(code_slice, address, max_instructions)?;
+
+            // MBA検出
+            let mba_patterns = MBADetector::detect(&pcodes);
+
+            // MBA簡約化
+            let mut simplifier = KenshoMBASimplifier::new();
+            let simplified_result = simplifier.simplify_with_kensho(&pcodes);
+
+            let stats = simplifier.stats();
+
+            json!({
+                "function_address": format!("0x{:x}", address),
+                "mba_patterns_detected": mba_patterns.len(),
+                "simplification_found": simplified_result.is_some(),
+                "patterns": mba_patterns.iter().map(|p| {
+                    json!({
+                        "type": format!("{:?}", p),
+                        "description": "MBA obfuscation pattern"
+                    })
+                }).collect::<Vec<_>>(),
+                "simplified_expression": simplified_result.as_ref().map(|s| {
+                    json!({
+                        "expression": &s.expression,
+                        "verification": format!("{:?}", s.verification),
+                        "rules_applied": s.rules_applied.iter().map(|r| format!("{:?}", r)).collect::<Vec<_>>()
+                    })
+                }),
+                "statistics": {
+                    "verifications": stats.verifications,
+                    "successful_simplifications": stats.successful_simplifications,
+                    "cache_hits": stats.cache_hits,
+                    "total_verification_time_ms": stats.total_verification_time_ms
+                }
             })
         }
 

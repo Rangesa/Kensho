@@ -38,23 +38,63 @@ cargo build --release
 ### MCP (Model Context Protocol) 連携
 このサーバーはMCPプロトコルを介して、静的解析結果を構造化データ（JSON）として提供します。
 
-`mcp.json` 設定例:
+#### Claude Code 設定
+`.mcp.json`:
 ```json
 {
   "mcpServers": {
-    "kensho": {
-      "command": "target/release/kensho-mcp.exe"
+    "kensho-mcp": {
+      "type": "stdio",
+      "command": "D:\\Programming\\MCP\\target\\release\\kensho-mcp.exe",
+      "args": [],
+      "env": {}
     }
   }
 }
 ```
+
+#### Gemini CLI 設定
+`.gemini/settings.json`:
+```json
+{
+  "mcpServers": {
+    "kensho-mcp": {
+      "command": "D:\\Programming\\MCP\\target\\release\\kensho-mcp.exe",
+      "args": [],
+      "env": {},
+      "timeout": 60000,
+      "trust": true
+    }
+  }
+}
+```
+
+または、グローバル設定（`~/.gemini/settings.json`）に追加することで、全プロジェクトから利用可能になります。
+
+#### 利用可能なMCPツール
+
+**基本解析ツール:**
+- `get_binary_summary`: バイナリの基本情報（PE/ELF情報、エントロピー、インポート）
+- `list_sections`: セクション情報とエントロピー分析
+- `list_strings`: 抽出された文字列リスト
+- `list_imports`: インポートテーブル
+- `decompile_function_native`: x86-64ネイティブ命令のP-codeへの変換と疑似コード生成
+- `dump_process_memory`: プロセスメモリダンプ（PID指定）
+
+**難読化解析ツール（Phase 1）:**
+- `detect_obfuscation`: 総合的な難読化パターン検出（MBA、制御フロー平坦化、VM保護、opaque predicates等）
+- `detect_vm_protection`: VM-based obfuscation（VMProtect等）の検出
+- `analyze_control_flow_flattening`: 制御フロー平坦化の詳細解析（ディスパッチャー、状態変数、遷移）
+- `simplify_mba_expression`: MBA式の簡約化と等価性検証（Kensho SMT solver使用）
 
 ## 🔬 実装ステータス (Phases)
 
 - [x] Phase 1-6: 基本P-code生成、SSA変換、型推論、制御構造認識。
 - [x] Phase 7-9: NZMask最適化、シンボル復元、C疑似コード生成。
 - [x] Phase 10: Def-Use Chain、ジャンプテーブル解析、Switch文復元。
+- [x] Phase 11: 難読化解析（MBA検出・簡約化、VM保護検出、制御フロー平坦化解析、SMT検証）。
 - [x] SMT Migration: 外部Z3依存の完全削除と自作ソルバーへの移行。
+- [x] MCP Integration: Claude Code / Gemini CLI対応、難読化解析ツールのMCP公開。
 
 ## 📜 ライセンス
 
