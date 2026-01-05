@@ -19,6 +19,7 @@ pub mod control_flow;
 pub mod type_inference;
 pub mod function_analyzer;
 pub mod parallel_analyzer;
+pub mod unified_decompiler;  // MCP tool consolidation
 pub mod c_printer;
 pub mod symbol_recovery;
 pub mod dataflow;
@@ -57,6 +58,7 @@ pub use control_flow::{ControlFlowAnalyzer, ControlStructure, ControlStructurePr
 pub use type_inference::{TypeInference, Type, IntType, FloatType};
 pub use function_analyzer::{FunctionDetector, FunctionInfo, FunctionStatistics};
 pub use parallel_analyzer::{ParallelDecompiler, CachedFunctionResult, CacheStatistics, HashStrategy};
+pub use unified_decompiler::{UnifiedDecompiler, UnifiedDecompileResult, DetailLevel, DisassemblyLine, TypeBinding};
 pub use c_printer::CPrinter;
 pub use symbol_recovery::{SymbolTable, Symbol, SymbolKind};
 pub use dataflow::{DefUseChain, CopyPropagation, DeadCodeElimination, DataFlowStats};

@@ -104,20 +104,49 @@ installer.exeのインポート関数を教えて
 - インポートされた関数リスト
 - オーディナル情報
 
-### 関数のデコンパイル
+### 関数一覧取得
 
-**ツール**: `decompile_function_native`
+**ツール**: `list_functions`
 
+```
+installer.exeの関数一覧を取得して
+```
+
+**取得情報**:
+- 関数名（エクスポートテーブル、シンボルテーブルから検出）
+- アドレス
+- サイズ
+- ページネーション対応
+
+### 関数のデコンパイル（統合版）
+
+**ツール**: `decompile_function`
+
+**基本使用（軽量・高速）**:
 ```
 installer.exeのアドレス0x1000の関数をデコンパイルして
 ```
 
+**詳細解析（型推論含む）**:
+```
+installer.exeのアドレス0x1000の関数を詳細デコンパイル（detail_level=full, include_disassembly=true）
+```
+
 **取得情報**:
-- x86-64ネイティブ命令
-- P-code変換結果
-- SSA形式
-- C疑似コード
-- 型推論結果
+- **basic モード**（デフォルト）:
+  - P-code操作数
+  - 基本ブロック数
+  - ループ数
+  - 制御構造表現
+- **full モード**（`detail_level=full` 指定時）:
+  - 上記に加えて型推論結果
+  - 逆アセンブル（`include_disassembly=true` 指定時）
+
+**パラメータ**:
+- `cache` (デフォルト: true): キャッシュ使用で高速化
+- `detail_level` (デフォルト: basic): basic（統計のみ）/ full（型推論含む）
+- `include_disassembly` (デフォルト: false): 逆アセンブル含有（fullモードのみ有効）
+- `file_offset`: 省略時は仮想アドレスから自動計算（PE/ELF対応）
 
 ## 難読化解析ツール（Phase 1）
 
@@ -308,14 +337,6 @@ installer.exeのアドレス0x1000の制御フロー平坦化を解析
 5. **検出されたMBA式を簡約化**
 ```
 検出されたMBA式 "((x | y) - (x ^ y))" を簡約化
-```
-
-### プロセスメモリダンプ
-
-**ツール**: `dump_process_memory`
-
-```
-PID 1234のメモリをダンプして
 ```
 
 ## トラブルシューティング

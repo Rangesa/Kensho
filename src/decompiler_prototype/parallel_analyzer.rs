@@ -213,7 +213,7 @@ impl ParallelDecompiler {
     }
 
     /// Decompile function without caching
-    fn decompile_function_uncached(
+    pub fn decompile_function_uncached(
         &self,
         binary_data: &[u8],
         function_address: u64,

@@ -71,17 +71,22 @@ cargo build --release
 
 または、グローバル設定（`~/.gemini/settings.json`）に追加することで、全プロジェクトから利用可能になります。
 
-#### 利用可能なMCPツール
+#### 利用可能なMCPツール (10個)
 
-**基本解析ツール:**
-- `get_binary_summary`: バイナリの基本情報（PE/ELF情報、エントロピー、インポート）
-- `list_sections`: セクション情報とエントロピー分析
-- `list_strings`: 抽出された文字列リスト
-- `list_imports`: インポートテーブル
-- `decompile_function_native`: x86-64ネイティブ命令のP-codeへの変換と疑似コード生成
-- `dump_process_memory`: プロセスメモリダンプ（PID指定）
+**基本解析ツール (5個):**
+- `get_binary_summary`: バイナリの基本情報（PE/ELF情報、エントロピー、インポート統計）
+- `list_sections`: セクション情報とエントロピー分析（ページネーション対応）
+- `list_functions`: 関数一覧（エクスポート/シンボルテーブルから検出、ページネーション対応）
+- `list_strings`: 抽出された文字列リスト（ページネーション対応）
+- `list_imports`: インポートテーブル（DLL別グループ化）
 
-**難読化解析ツール（Phase 1）:**
+**デコンパイルツール (1個):**
+- `decompile_function`: 統合デコンパイラ（P-code変換、SSA、型推論、制御構造解析）
+  - キャッシュ制御: `cache` パラメータで有効/無効を選択
+  - 詳細レベル: `detail_level` で basic（統計のみ）/ full（型推論含む）を選択
+  - ファイルオフセット自動計算: PE/ELF対応、仮想アドレスから自動変換
+
+**難読化解析ツール (4個):**
 - `detect_obfuscation`: 総合的な難読化パターン検出（MBA、制御フロー平坦化、VM保護、opaque predicates等）
 - `detect_vm_protection`: VM-based obfuscation（VMProtect等）の検出
 - `analyze_control_flow_flattening`: 制御フロー平坦化の詳細解析（ディスパッチャー、状態変数、遷移）

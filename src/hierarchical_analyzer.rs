@@ -103,25 +103,6 @@ pub struct ImportInfo {
     pub functions: Vec<String>,
 }
 
-/// 階層3: 関数詳細解析（重い、オンデマンド実行）
-#[derive(Debug, Serialize)]
-pub struct FunctionDetail {
-    pub address: u64,
-    pub name: String,
-    pub size: u64,
-    pub disassembly: Vec<InstructionInfo>,
-    pub decompiled: Option<String>,
-    pub cross_references: Vec<u64>,
-}
-
-#[derive(Debug, Serialize)]
-pub struct InstructionInfo {
-    pub address: u64,
-    pub mnemonic: String,
-    pub operands: String,
-    pub bytes: String,
-}
-
 /// 階層型解析エンジン
 pub struct HierarchicalAnalyzer {
     // 解析済データのキャッシュ（将来の拡張用）
@@ -330,49 +311,6 @@ impl HierarchicalAnalyzer {
         })
     }
 
-    /// 階層3: 関数詳細解析
-    pub fn analyze_function_detail(
-        &mut self,
-        path: &str,
-        function_address: u64,
-    ) -> Result<FunctionDetail> {
-        // 特定の関数についてのみ重い処理（逆アセンブル等）を行う
-        use crate::disassembler::Disassembler;
-        use crate::decompiler::Decompiler;
-        
-        let functions = self.get_or_cache_functions(path)?;
-        let func = functions.iter()
-            .find(|f| f.address == function_address)
-            .ok_or_else(|| anyhow::anyhow!("Function not found"))?;
-        
-        // 逆アセンブル（制限付き：100命令まで）
-        let disasm = Disassembler::new(path)?;
-        let (instructions, _) = disasm.disassemble_function(function_address)?;
-        
-        let disassembly: Vec<_> = instructions.iter()
-            .take(100) // コンテキスト保護のため制限
-            .map(|insn| InstructionInfo {
-                address: insn.address,
-                mnemonic: insn.mnemonic.clone(),
-                operands: insn.operands.clone(),
-                bytes: format!("{:02x}", insn.size),
-            })
-            .collect();
-        
-        // 簡易デコンパイル（オプション）
-        let decompiler = Decompiler::new(path)?;
-        let decompiled = decompiler.decompile(&format!("0x{:x}", function_address)).ok();
-        
-        Ok(FunctionDetail {
-            address: func.address,
-            name: func.name.clone(),
-            size: func.size,
-            disassembly,
-            decompiled,
-            cross_references: vec![], // TODO: クロスリファレンス実装
-        })
-    }
-
     /// 階層2: インポート一覧
     pub fn list_imports(&mut self, path: &str) -> Result<ImportList> {
         let buffer = fs::read(path)?;
@@ -496,7 +434,7 @@ impl HierarchicalAnalyzer {
             }
         }
         
-        let average_entropy = if !sections.is_empty() {
+        let _average_entropy = if !sections.is_empty() {
             total_entropy / sections.len() as f64
         } else {
             0.0

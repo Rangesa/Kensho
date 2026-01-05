@@ -14,3 +14,6 @@ pub mod memory_scanner;
 
 // kensho専用SMTソルバー（軽量、外部依存なし）
 pub mod kensho_smt;
+
+// MCP (Model Context Protocol) ツール定義・ハンドラー
+pub mod mcp;
