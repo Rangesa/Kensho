@@ -310,6 +310,119 @@ MBA式 "((x ^ y) + 2 * (x & y))" を簡約化して
 }
 ```
 
+## 動的解析ツール（Windows専用）
+
+### サンドボックス実行
+
+**ツール**: `run_in_sandbox`
+
+```
+suspicious.exeをサンドボックスで実行して（メモリ256MB制限）
+```
+
+**機能**:
+- Job Objectによるリソース制限（メモリ、プロセス数）
+- UI制限（クリップボード、デスクトップアクセス禁止）
+- 親プロセス終了時の子プロセス強制終了
+- 管理者権限不要
+
+**出力例**:
+```json
+{
+  "success": true,
+  "process_id": 12345,
+  "exit_code": 0,
+  "sandbox_config": {
+    "memory_limit_mb": 256,
+    "timeout_ms": 30000,
+    "restricted_privileges": true,
+    "ui_restricted": true
+  }
+}
+```
+
+### 関数トレース
+
+**ツール**: `trace_function`
+
+```
+PID 12345のプロセスでアドレス0x140001000をトレースして
+```
+
+**機能**:
+- シングルステップ実行
+- レジスタ値の記録（RAX, RCX, RDX, R8, R9, RSP, RIP等）
+- 実行パスの追跡
+
+### サンドボックス+トレース
+
+**ツール**: `sandbox_trace`
+
+```
+suspicious.exeをサンドボックスで起動してアドレス0x140001000をトレース
+```
+
+### 統合解析（動的+静的）
+
+**ツール**: `analyze_with_trace`
+
+```
+suspicious.exeのアドレス0x140001000を統合解析して（動的トレース+静的解析）
+```
+
+**機能**:
+- Phase 1: サンドボックス実行 + 動的トレース
+- Phase 2: 静的解析（P-code、CFG、難読化検出）
+- Phase 3: 統合インサイト生成
+
+**出力例**:
+```json
+{
+  "success": true,
+  "function_address": "0x140017950",
+  "dynamic_analysis": {
+    "sandbox": {
+      "process_id": 12345,
+      "exit_code": 0
+    },
+    "trace": {
+      "success": true,
+      "total_instructions": 150,
+      "unique_addresses": 45,
+      "execution_path": ["0x140017950", "0x140017955", "..."],
+      "register_samples": [...]
+    }
+  },
+  "static_analysis": {
+    "success": true,
+    "pcode_count": 237,
+    "block_count": 8,
+    "obfuscation": {
+      "detected": true,
+      "score": 0.37,
+      "mba_count": 2
+    }
+  },
+  "combined_insights": {
+    "summary": [
+      "実行された命令数: 150 (ユニーク: 45)",
+      "検出された分岐: 12 回"
+    ],
+    "recommendation": "正常に解析完了"
+  }
+}
+```
+
+### メモリダンプ
+
+**ツール**: `dump_memory_region`
+
+```
+PID 12345のアドレス0x7FF000000000から4096バイトをダンプ
+```
+
+**出力**: Base64エンコードされたメモリデータ
+
 ## 使用例
 
 ### 完全に難読化されたバイナリの解析

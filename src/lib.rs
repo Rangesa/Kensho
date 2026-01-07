@@ -12,6 +12,10 @@ pub mod decompiler_prototype;
 // 動的解析（メモリ走査）
 pub mod memory_scanner;
 
+// 動的解析（プロセストレース、デバッグAPI）
+#[cfg(windows)]
+pub mod dynamic_analysis;
+
 // kensho専用SMTソルバー（軽量、外部依存なし）
 pub mod kensho_smt;
 

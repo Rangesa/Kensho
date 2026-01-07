@@ -1,6 +1,5 @@
 # Rust
 /target
-Cargo.lock
 
 # Go
 *.exe
@@ -33,6 +32,12 @@ extracted_image_*.png
 nul
 /temp/WoWoWoWoW.exe
 /temp/question.exe
+/temp/*.log
+/temp/*.json
+/temp/*.bin
+/temp/test_binary/
 /source_dump/
 /cache/
 check_output.log
+moby-master/
+x64dbg-development/

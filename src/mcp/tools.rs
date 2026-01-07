@@ -6,25 +6,37 @@ use serde_json::{json, Value};
 
 /// 全ツール定義を取得
 pub fn get_tool_definitions() -> Vec<Value> {
-    vec![
+    let mut tools = vec![
         // === 階層1: サマリー ===
         tool_get_binary_summary(),
-        
+
         // === 階層2: 一覧系 ===
         tool_list_sections(),
         tool_list_functions(),
         tool_list_strings(),
         tool_list_imports(),
-        
+
         // === デコンパイラ ===
         tool_decompile_function(),
-        
+
         // === 難読化解析 ===
         tool_detect_obfuscation(),
         tool_detect_vm_protection(),
         tool_analyze_control_flow_flattening(),
         tool_simplify_mba_expression(),
-    ]
+    ];
+
+    // === 動的解析（Windows専用） ===
+    #[cfg(windows)]
+    {
+        tools.push(tool_trace_function());
+        tools.push(tool_dump_memory_region());
+        tools.push(tool_run_in_sandbox());
+        tools.push(tool_sandbox_trace());
+        tools.push(tool_analyze_with_trace());
+    }
+
+    tools
 }
 
 // =============================================================================
@@ -293,6 +305,171 @@ fn tool_simplify_mba_expression() -> Value {
                 }
             },
             "required": ["path", "function_address"]
+        }
+    })
+}
+
+// ========== 動的解析ツール（Windows専用） ==========
+
+#[cfg(windows)]
+fn tool_trace_function() -> Value {
+    json!({
+        "name": "trace_function",
+        "description": "関数を動的トレース（シングルステップ実行でレジスタ値を記録）",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "pid": {
+                    "type": "integer",
+                    "description": "プロセスID"
+                },
+                "function_address": {
+                    "type": "string",
+                    "description": "関数のアドレス（16進数: 0x140001000）"
+                },
+                "max_instructions": {
+                    "type": "integer",
+                    "description": "最大トレース命令数",
+                    "default": 1000
+                }
+            },
+            "required": ["pid", "function_address"]
+        }
+    })
+}
+
+#[cfg(windows)]
+fn tool_dump_memory_region() -> Value {
+    json!({
+        "name": "dump_memory_region",
+        "description": "プロセスのメモリリージョンをダンプ",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "pid": {
+                    "type": "integer",
+                    "description": "プロセスID"
+                },
+                "address": {
+                    "type": "string",
+                    "description": "開始アドレス（16進数: 0x7FF000000000）"
+                },
+                "size": {
+                    "type": "integer",
+                    "description": "ダンプサイズ（バイト）",
+                    "default": 4096
+                }
+            },
+            "required": ["pid", "address"]
+        }
+    })
+}
+
+#[cfg(windows)]
+fn tool_run_in_sandbox() -> Value {
+    json!({
+        "name": "run_in_sandbox",
+        "description": "サンドボックス環境でバイナリを実行（メモリ/プロセス制限、権限剥奪）",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "exe_path": {
+                    "type": "string",
+                    "description": "実行するバイナリのパス"
+                },
+                "args": {
+                    "type": "string",
+                    "description": "コマンドライン引数（省略可）"
+                },
+                "memory_limit_mb": {
+                    "type": "integer",
+                    "description": "メモリ制限（MB）",
+                    "default": 512
+                },
+                "timeout_ms": {
+                    "type": "integer",
+                    "description": "タイムアウト（ミリ秒）",
+                    "default": 30000
+                }
+            },
+            "required": ["exe_path"]
+        }
+    })
+}
+
+#[cfg(windows)]
+fn tool_sandbox_trace() -> Value {
+    json!({
+        "name": "sandbox_trace",
+        "description": "サンドボックス内でプロセスを起動し、指定関数をトレース",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "exe_path": {
+                    "type": "string",
+                    "description": "実行するバイナリのパス"
+                },
+                "function_address": {
+                    "type": "string",
+                    "description": "トレースする関数のアドレス（16進数: 0x140001000）"
+                },
+                "args": {
+                    "type": "string",
+                    "description": "コマンドライン引数（省略可）"
+                },
+                "max_instructions": {
+                    "type": "integer",
+                    "description": "最大トレース命令数",
+                    "default": 1000
+                },
+                "memory_limit_mb": {
+                    "type": "integer",
+                    "description": "メモリ制限（MB）",
+                    "default": 512
+                }
+            },
+            "required": ["exe_path", "function_address"]
+        }
+    })
+}
+
+#[cfg(windows)]
+fn tool_analyze_with_trace() -> Value {
+    json!({
+        "name": "analyze_with_trace",
+        "description": "動的解析と静的解析を統合。サンドボックスでトレース実行し、実行パスに対して静的解析（デコンパイル、難読化検出）を適用",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "exe_path": {
+                    "type": "string",
+                    "description": "解析対象バイナリのパス"
+                },
+                "function_address": {
+                    "type": "string",
+                    "description": "解析開始アドレス（16進数: 0x140001000）"
+                },
+                "args": {
+                    "type": "string",
+                    "description": "コマンドライン引数（省略可）"
+                },
+                "max_instructions": {
+                    "type": "integer",
+                    "description": "最大トレース命令数",
+                    "default": 500
+                },
+                "memory_limit_mb": {
+                    "type": "integer",
+                    "description": "メモリ制限（MB）",
+                    "default": 256
+                },
+                "detect_obfuscation": {
+                    "type": "boolean",
+                    "description": "難読化検出を実行",
+                    "default": true
+                }
+            },
+            "required": ["exe_path", "function_address"]
         }
     })
 }

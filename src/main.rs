@@ -51,9 +51,9 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_target(false)
         .with_level(true)
-        .init();
+        .with_writer(std::io::stderr).init();
 
-    info!("🦀 Kensho MCP Hierarchical Server starting...");
+    info!("Kensho MCP Hierarchical Server starting...");
 
     // 階層的解析器を初期化（キャッシュ機能付き）
     let analyzer = Arc::new(Mutex::new(HierarchicalAnalyzer::new()));
@@ -63,7 +63,7 @@ async fn main() -> Result<()> {
     let mut reader = BufReader::new(stdin);
     let mut line = String::new();
 
-    info!("🚀 Server ready (Hierarchical Analysis Mode)");
+    info!("Server ready (Hierarchical Analysis Mode)");
 
     loop {
         line.clear();
@@ -174,3 +174,4 @@ async fn handle_tool_call(
 
     dispatch_tool(tool_name, arguments, analyzer).await
 }
+
