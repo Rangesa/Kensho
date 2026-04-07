@@ -3,7 +3,7 @@
 RustネイティブのP-codeベース・バイナリ解析フレームワーク。
 GhidraのP-codeアーキテクチャを参考に、難読化解除（MBA簡約化）とシンボリック実行に特化した解析エンジンを提供します。
 
-## 🛠 技術仕様
+## 技術仕様
 
 ### 1. P-code エンジン
 - **Lifter**: `iced-x86` を使用したx86-64命令からP-codeへの変換。
@@ -21,14 +21,14 @@ GhidraのP-codeアーキテクチャを参考に、難読化解除（MBA簡約�
 - **Indirect Jumps**: ジャンプテーブル解析によるSwitch-Case構造の復元。
 - **Symbolic Execution**: シンボリックメモリモデルによるパス探索と脆弱性検知。
 
-## 📦 プロジェクト構造
+## プロジェクト構造
 
 - `src/kensho_smt/`: 自作SATソルバー、ビットブラスティング、式簡約化。
 - `src/decompiler_prototype/`: P-code生成、SSA変換、最適化エンジン。
 - `src/hierarchical_analyzer.rs`: 大規模バイナリ向けのページネーション付き解析。
 - `examples/`: War Thunder（PE64）等の実バイナリを用いた解析デモ。
 
-## 🚀 利用方法
+## 利用方法
 
 ### ビルド
 ```bash
@@ -92,7 +92,7 @@ cargo build --release
 - `analyze_control_flow_flattening`: 制御フロー平坦化の詳細解析（ディスパッチャー、状態変数、遷移）
 - `simplify_mba_expression`: MBA式の簡約化と等価性検証（Kensho SMT solver使用）
 
-## 🔬 実装ステータス (Phases)
+## 実装ステータス (Phases)
 
 - [x] Phase 1-6: 基本P-code生成、SSA変換、型推論、制御構造認識。
 - [x] Phase 7-9: NZMask最適化、シンボル復元、C疑似コード生成。
@@ -101,6 +101,6 @@ cargo build --release
 - [x] SMT Migration: 外部Z3依存の完全削除と自作ソルバーへの移行。
 - [x] MCP Integration: Claude Code / Gemini CLI対応、難読化解析ツールのMCP公開。
 
-## 📜 ライセンス
+## ライセンス
 
 MIT License
